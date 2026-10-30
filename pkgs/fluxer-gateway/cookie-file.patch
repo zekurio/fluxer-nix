@@ -1,0 +1,26 @@
+--- a/fluxer_gateway/config/vm.args.src
++++ b/fluxer_gateway/config/vm.args.src
+@@ -1,6 +1,5 @@
+ # SPDX-License-Identifier: AGPL-3.0-or-later
+ -name ${FLUXER_ERLANG_NODE_NAME}
+--setcookie ${FLUXER_ERLANG_COOKIE}
+ +A1
+ +P 262144
+ +Q 65536
+--- a/fluxer_gateway/scripts/docker_entrypoint.sh
++++ b/fluxer_gateway/scripts/docker_entrypoint.sh
+@@ -106,7 +106,13 @@
+ fi
+ 
+ export FLUXER_ERLANG_NODE_NAME
+-export FLUXER_ERLANG_COOKIE
++# The node reads its cookie from $HOME/.erlang.cookie, which keeps it off
++# the command line. printf is a builtin, so no process sees it either.
++(
++	umask 077
++	printf '%s\n' "$FLUXER_ERLANG_COOKIE" >"$HOME/.erlang.cookie"
++)
++unset FLUXER_ERLANG_COOKIE FLUXER_ERLANG_COOKIE_FILE
+ export FLUXER_ERLANG_DIST_PORT
+ export FLUXER_ERLANG_SCHEDULERS
+ export FLUXER_ERLANG_DIRTY_CPU_SCHEDULERS

@@ -1,0 +1,32 @@
+--- a/fluxer_api/src/api/Config.ts
++++ b/fluxer_api/src/api/Config.ts
+@@ -651,6 +651,7 @@
+ 
+ interface APIServerOptions {
+ 	port: number;
++	hostname?: string;
+ 	headersTimeoutMs: number;
+ 	requestTimeoutMs: number;
+ }
+@@ -658,6 +659,7 @@
+ export function buildAPIServerOptions(config: APIConfig): APIServerOptions {
+ 	return {
+ 		port: config.port,
++		hostname: process.env.FLUXER_API_LISTEN_HOST?.trim() || undefined,
+ 		headersTimeoutMs: config.headersTimeoutMs,
+ 		requestTimeoutMs: config.requestTimeoutMs,
+ 	};
+--- a/fluxer_api/src/api/worker/WorkerMain.ts
++++ b/fluxer_api/src/api/worker/WorkerMain.ts
+@@ -79,7 +79,10 @@
+ function startWorkerMetricsServer(port: number): ServerType {
+ 	const app = new Hono();
+ 	app.get('/_metrics', createRegisteredMetricsHandler());
+-	return createServer(app, {port, onListen: (info) => Logger.info({port: info.port}, 'Worker metrics listening')});
++	return createServer(app, {
++		port,
++		hostname: process.env.FLUXER_API_LISTEN_HOST?.trim() || undefined,
++		onListen: (info) => Logger.info({port: info.port}, 'Worker metrics listening')});
+ }
+ 
+ function registerCronJobs(cron: CronScheduler, jobsStreamMaxAgeMs: number, kvClient: IKVProvider): void {

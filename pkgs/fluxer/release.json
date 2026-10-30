@@ -1,0 +1,107 @@
+{
+  "version": "2026.1029.225131",
+  "components": {
+    "fluxer-admin": {
+      "version": "2026.1029.220822",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-api": {
+      "version": "2026.1029.220801",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "pnpmDeps": "sha256-yqZiHqAKtEgK9dIwJzUZ2OJQqHOZdOiXDNHjhJ49fdg="
+      }
+    },
+    "fluxer-app-proxy-self-hosted": {
+      "version": "2026.1029.220756",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU=",
+        "libfluxcoreCargoDeps": "sha256-j0x+EDR3KKJX3EW8R+zKr2L/Gsuy+LEVF6IWfh3vN9k=",
+        "libfluxwebpCargoDeps": "sha256-zz5JD3jiNCx8FOReZmCm4O2F20s7UbMsfZIM2sIcSS0=",
+        "pnpmDeps": "sha256-++KVQBezTP1hszT5B7TPhkR1MEO3FnvGxbKSICiWpCc="
+      }
+    },
+    "fluxer-gateway": {
+      "version": "2026.1029.220811",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU=",
+        "memberListNifCargoDeps": "sha256-lECOMdkbdWAeL829MrWPWGQI44P+4VMnLIp9Jd+xJJo=",
+        "markdownNifCargoDeps": "sha256-9HDcMd1qfIOJPIw6D9bLR4rSfbz8Zv/wz9zQe3PoZjM=",
+        "rebarDeps": "sha256-BNGJT4BeNHIfQ9uSWwTwj6hk9/+bNBRvhM01F+tl6s8="
+      }
+    },
+    "fluxer-gifs": {
+      "version": "2026.1029.220801",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-media-proxy": {
+      "version": "2026.1029.220816",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-messages": {
+      "version": "2026.1029.220743",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-push": {
+      "version": "2026.1029.220805",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-snowflakes": {
+      "version": "2026.1029.220725",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-static": {
+      "version": "2026.1029.220809",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "spellcheckDictionaries": "sha256-8rGq4IpvBTCV8U2k4uzqIry+iVfSBpezM1mwbDbXaHg="
+      }
+    },
+    "fluxer-unfurl": {
+      "version": "2026.1029.220813",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    },
+    "fluxer-users": {
+      "version": "2026.1029.220733",
+      "rev": "b80ae44b7d629cc2770a0cf27d622e6e0563760d",
+      "hashes": {
+        "src": "sha256-7lEWSaXczkewg7TIBG85Q+Q6J9UerJpcEXnjm+vOVVU=",
+        "cargoDeps": "sha256-3PnAeK3MaRDELl/iBCLx3aD05k/6jVoxT7biSfUTdQU="
+      }
+    }
+  }
+}

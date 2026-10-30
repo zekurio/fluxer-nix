@@ -1,0 +1,60 @@
+--- a/fluxer_gateway/config/vm.args.src
++++ b/fluxer_gateway/config/vm.args.src
+@@ -21,3 +21,4 @@
+ -kernel logger_level warning
+ -kernel inet_dist_listen_min ${FLUXER_ERLANG_DIST_PORT}
+ -kernel inet_dist_listen_max ${FLUXER_ERLANG_DIST_PORT}
++-kernel inet_dist_use_interface ${FLUXER_ERLANG_DIST_INTERFACE}
+--- a/fluxer_gateway/scripts/docker_entrypoint.sh
++++ b/fluxer_gateway/scripts/docker_entrypoint.sh
+@@ -57,6 +57,11 @@
+ is_positive_int "${FLUXER_ERLANG_SCHEDULERS_MAX:-}" || FLUXER_ERLANG_SCHEDULERS_MAX=16
+ : "${FLUXER_ERLANG_NODE_NAME:=fluxer_gateway@127.0.0.1}"
+ : "${FLUXER_ERLANG_DIST_PORT:=8081}"
++# The address of the distribution port, as an Erlang tuple. Set in vm.args
++# rather than on the command line, so the release's own tools connect there.
++if [ -z "${FLUXER_ERLANG_DIST_INTERFACE:-}" ]; then
++	FLUXER_ERLANG_DIST_INTERFACE='{0,0,0,0}'
++fi
+ node_name_file=/opt/fluxer_gateway/node_name
+ 
+ if [ -n "${FLUXER_ERLANG_NODE_NAME_PREFIX:-}" ]; then
+@@ -114,6 +119,7 @@
+ )
+ unset FLUXER_ERLANG_COOKIE FLUXER_ERLANG_COOKIE_FILE
+ export FLUXER_ERLANG_DIST_PORT
++export FLUXER_ERLANG_DIST_INTERFACE
+ export FLUXER_ERLANG_SCHEDULERS
+ export FLUXER_ERLANG_DIRTY_CPU_SCHEDULERS
+ export FLUXER_ERLANG_DIRTY_IO_SCHEDULERS
+--- a/fluxer_gateway/src/gateway/fluxer_gateway_app.erl
++++ b/fluxer_gateway/src/gateway/fluxer_gateway_app.erl
+@@ -41,7 +41,7 @@
+         cowboy:start_clear(
+             http,
+             #{
+-                socket_opts => [{port, Port}],
++                socket_opts => listen_ip() ++ [{port, Port}],
+                 max_connections => infinity
+             },
+             #{
+@@ -55,6 +55,19 @@
+         {error, E} -> {error, E}
+     end.
+ 
++-spec listen_ip() -> [inet6 | {ip, inet:ip_address()}].
++listen_ip() ->
++    case os:getenv("FLUXER_GATEWAY_LISTEN_HOST", "") of
++        "" ->
++            [];
++        Host ->
++            {ok, Ip} = inet:parse_address(Host),
++            case tuple_size(Ip) of
++                8 -> [inet6, {ip, Ip}];
++                4 -> [{ip, Ip}]
++            end
++    end.
++
+ -spec prep_stop(term()) -> term().
+ prep_stop(State) ->
+     ok = gateway_shutdown_drain:run(),

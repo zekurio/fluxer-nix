@@ -1,0 +1,24 @@
+--- a/fluxer_gateway/src/gateway/gateway_rollout_config.erl
++++ b/fluxer_gateway/src/gateway/gateway_rollout_config.erl
+@@ -26,6 +26,7 @@
+ 
+ -define(PERSISTENT_TERM_KEY, gateway_rollout_config).
+ -define(FETCH_DELAY_MS, 2000).
++-define(FETCH_RETRY_MS, 15000).
+ -define(NATS_SUBSCRIBE_RETRY_MS, 2000).
+ -define(NATS_SUBJECT, <<"config.gateway.rollout">>).
+ -define(SESSION_START_CEILING_KEY, {?MODULE, session_start_ceiling}).
+@@ -147,7 +148,12 @@
+ handle_info(subscribe_nats, State) ->
+     {noreply, subscribe_to_nats(State)};
+ handle_info(fetch_initial_config, State) ->
+-    maybe_notify_subscribers(fetch_config_from_api(), State),
++    case fetch_config_from_api() of
++        rejected ->
++            erlang:send_after(?FETCH_RETRY_MS, self(), fetch_initial_config);
++        Result ->
++            maybe_notify_subscribers(Result, State)
++    end,
+     {noreply, State};
+ handle_info({nats_msg, ?NATS_SUBJECT, Payload, _ReplyTo}, State) when is_binary(Payload) ->
+     maybe_notify_subscribers(apply_nats_payload(Payload), State),
