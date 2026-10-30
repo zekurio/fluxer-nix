@@ -36,6 +36,10 @@
             inherit (nixpkgs.lib) nixosSystem;
             module = self.nixosModules.default;
           };
+          multi-host = import ./tests/multi-host.nix {
+            inherit pkgs;
+            module = self.nixosModules.default;
+          };
           instance = import ./tests/instance.nix {
             inherit pkgs;
             module = self.nixosModules.default;

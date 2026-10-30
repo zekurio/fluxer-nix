@@ -139,9 +139,10 @@ Each service has `services.fluxer.<service>.enable`, `package`, `port`,
 
 They listen on `services.fluxer.listenAddress`, 127.0.0.1 by default, and
 the services on one host reach each other there, or on loopback for `0.0.0.0`
-or `::`. The gateway's Erlang distribution port listens on loopback only, and
-no epmd runs, so the gateway cannot join a cluster. The five internal services
-talk to the rest over NATS. Each runs its router and shard in one process.
+or `::`. The gateway's Erlang distribution port listens on loopback, unless
+the gateway is in a cluster (below), and no epmd runs. The five internal
+services talk to the rest over NATS. Each runs its router and shard in one
+process.
 
 On one host the API counts as started once it answers, so the services that
 need it at startup, the gateway and push among them, start after that.
@@ -152,9 +153,89 @@ with `services.fluxer.enable`, and an address for a server elsewhere:
 `services.fluxer.endpoints` says where the services and the edge reach one
 another when they run on different hosts.
 
+The local backing services listen on
+`services.fluxer.backingServices.listenAddress`, 127.0.0.1 by default. NATS
+requires a token and Valkey a password, so other users on the host cannot use
+them; both are generated with the other secrets. To share them with other
+hosts, see [Several hosts](#several-hosts).
+
 `services.fluxer.edge` is Caddy with upstream's routes. It also serves the
 static assets directly, where upstream runs a second Caddy. To use another
 reverse proxy, turn it off and copy the routes from `modules/edge.nix`.
+
+### Several hosts
+
+The host with the backing services shares them with the hosts listed in
+`clients`:
+
+```nix
+services.fluxer.backingServices = {
+  listenAddress = "10.0.0.1";   # this host, on the private network
+  clients = [ "10.0.0.2" ];     # the hosts that use them
+};
+```
+
+This opens their ports to those hosts only, and lets them into PostgreSQL
+with the password in `FLUXER_POSTGRES_PASSWORD`. SeaweedFS shares only its S3
+port. None of the backing services encrypt their traffic, so keep it on a
+private network, such as a WireGuard tunnel.
+
+A host that runs other parts, here the worker, points at them:
+
+```nix
+services.fluxer = {
+  domain = "chat.example.com";
+  worker.enable = true;
+  postgres.host = "10.0.0.1";
+  valkey = {
+    url = "redis://10.0.0.1:6379/0";
+    passwordFile = config.age.secrets.fluxer-valkey.path;
+  };
+  nats.url = "nats://10.0.0.1:4222";
+  search.url = "http://10.0.0.1:7700";
+  s3.endpoint = "http://10.0.0.1:8333";
+  endpoints.api = "http://10.0.0.1:8080";
+  secrets = { /* the same files as on the other hosts */ };
+};
+```
+
+Every host needs the same secrets, so give them all as files. The worker
+reads most of them, as the API does.
+
+### Gateway cluster
+
+Gateways on several hosts can form one cluster, as upstream's Helm chart runs
+them. Upstream's Docker stack runs a single gateway. On each gateway host:
+
+```nix
+services.fluxer = {
+  gateway.enable = true;
+  # Every node needs the same cookie.
+  secrets.FLUXER_ERLANG_COOKIE = config.age.secrets.fluxer-erlang-cookie.path;
+  gateway.cluster = {
+    enable = true;
+    address = "10.0.0.2";                 # this host, on the private network
+    peers = [ "10.0.0.2" "10.0.0.3" ];    # every gateway, this one included
+    openFirewall = true;                  # port 9100, from the peers only
+  };
+};
+```
+
+The edge spreads clients over the gateways:
+
+```nix
+services.fluxer.endpoints.gateway = [ "http://10.0.0.2:8081" "http://10.0.0.3:8081" ];
+```
+
+Erlang distribution is not encrypted, and the cookie lets anyone who reaches
+the port run code on every node. Keep the addresses on a private network, such
+as a WireGuard tunnel. Upstream's Helm chart relies on the cluster network the
+same way. With no epmd, every node uses the one distribution port,
+`services.fluxer.gateway.distributionPort`.
+
+`fluxer-gateway-ctl`, run as root on a gateway host, runs the release's own
+commands against the running node, for example `fluxer-gateway-ctl ping` or
+`fluxer-gateway-ctl rpc erlang nodes`.
 
 ### Configuration and secrets
 
@@ -178,9 +259,13 @@ services.fluxer.secrets = {
 
 The backing services read theirs from the same place:
 `FLUXER_SEARCH_API_KEY` is the Meilisearch master key,
-`FLUXER_S3_SECRET_ACCESS_KEY` the S3 key, and `FLUXER_POSTGRES_PASSWORD` the
-password of a database elsewhere. The local database needs none: the services
-run as the `fluxer` user and connect over the Unix socket. It also collects
+`FLUXER_S3_SECRET_ACCESS_KEY` the S3 key, `FLUXER_NATS_AUTH_TOKEN` the NATS
+token, and `FLUXER_POSTGRES_PASSWORD` the password of a database elsewhere or
+shared with other hosts. The Valkey password is
+`services.fluxer.valkey.passwordFile`: Fluxer reads it only inside
+`FLUXER_KV_URL`, which the module puts together at boot from
+`services.fluxer.valkey.url`. The services on the database's own host need no
+password: they run as the `fluxer` user and connect over the Unix socket. It also collects
 query statistics with `pg_stat_statements`, as upstream's image does; turn
 that off with `services.fluxer.postgres.statementStats`.
 
@@ -301,6 +386,12 @@ so they take a while to build.
   ports, that a room creates a webhook signed with the shared secret, and that
   a service running as a dynamic user reads a root-only secret through
   `FLUXER_<NAME>_FILE`.
+- `multi-host`: an instance on two VMs. One shares its backing services and
+  runs the API, a gateway and the edge; the other runs the worker against
+  those backing services, and a second gateway clustered with the first. It
+  checks that NATS and Valkey refuse clients without credentials, that
+  SeaweedFS shares only S3, that the worker starts, that the gateways join,
+  and that the edge keeps serving the gateway when one node stops.
 - `instance`: a VM with a whole instance and generated secrets, checked
   through every service's health endpoint and the edge. It also checks that
   the services listen on loopback only, that no process shows the Erlang
@@ -326,10 +417,11 @@ Known issues:
 - The lists of secrets per service are read off upstream's source by hand. A
   release that makes a service read a new secret needs the list updated, or
   that service will not get it.
-- The gateway's Erlang distribution is on loopback, so it cannot join a
-  cluster. The release's `ping` and `rpc` commands still work, as the `fluxer`
-  user with the unit's environment, but they pass the cookie on the command
-  line of `erl_call` while they run.
+- The release's `ping` and `rpc` commands, which `fluxer-gateway-ctl` runs,
+  pass the cookie on the command line of `erl_call` while they run.
+- The multi-host test checks that the gateways join each other and that the
+  edge keeps serving when one stops. It does not check that a session on one
+  node reaches users on the other.
 - Ordering push and the gateway after the API only works on one host.
   Elsewhere push fetches its configuration again every 30 seconds, and the
   patched gateway every 15 seconds, until the API answers.

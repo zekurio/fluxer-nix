@@ -73,6 +73,58 @@ let
     };
   };
 
+  # One gateway of a cluster of two, with the edge in front of both.
+  clusterNode =
+    extra:
+    eval {
+      imports = [ extra ];
+      services.fluxer = {
+        enable = true;
+        domain = "chat.example.com";
+        secrets.FLUXER_ERLANG_COOKIE = "/run/secrets/erlang-cookie";
+        gateway.cluster = {
+          enable = true;
+          address = "10.0.0.2";
+          peers = [
+            "10.0.0.2"
+            "10.0.0.3"
+          ];
+          openFirewall = true;
+        };
+        endpoints.gateway = [
+          "http://10.0.0.2:8081"
+          "http://10.0.0.3:8081"
+        ];
+      };
+    };
+  gatewayNode = clusterNode { };
+
+  # The host with the backing services, shared with one other host.
+  sharedBacking = eval {
+    services.fluxer = {
+      enable = true;
+      domain = "chat.example.com";
+      backingServices = {
+        listenAddress = "10.0.0.1";
+        clients = [ "10.0.0.2" ];
+      };
+    };
+  };
+
+  # A host that runs only the worker, against the shared backing services.
+  remoteWorker = eval {
+    services.fluxer = {
+      domain = "chat.example.com";
+      worker.enable = true;
+      postgres.host = "10.0.0.1";
+      valkey = {
+        url = "redis://10.0.0.1:6379/0";
+        passwordFile = "/run/secrets/valkey";
+      };
+      nats.url = "nats://10.0.0.1:4222";
+    };
+  };
+
   unit = config: name: config.systemd.services."fluxer-${name}";
   env = config: name: (unit config name).environment;
   credentials =
@@ -170,11 +222,99 @@ let
       && (env instance "gateway").FLUXER_ERLANG_DIST_INTERFACE == "{127,0,0,1}";
     "local endpoints follow the listen address" =
       (env privateAddress "push").FLUXER_INTERNAL_API_ENDPOINT == "http://10.0.0.2:8080"
-      && privateAddress.services.fluxer.endpoints.gateway == "http://10.0.0.2:8081";
+      && privateAddress.services.fluxer.endpoints.gateway == [ "http://10.0.0.2:8081" ];
     "browsers get no S3 endpoint by default" =
       !((env instance "app-proxy") ? FLUXER_S3_PUBLIC_ENDPOINT);
     "the local database collects statement statistics" =
       instance.services.postgresql.settings.shared_preload_libraries == "pg_stat_statements";
+    "a gateway cluster node has no failed assertions" = failed gatewayNode == [ ];
+    "a gateway cluster node is named and listens on its address" =
+      lib.filterAttrs (
+        n: _:
+        lib.elem n [
+          "FLUXER_ERLANG_NODE_NAME"
+          "FLUXER_ERLANG_DIST_INTERFACE"
+          "FLUXER_GATEWAY_CLUSTER_ENABLED"
+          "FLUXER_GATEWAY_CLUSTER_STATIC_PEERS"
+        ]
+      ) (env gatewayNode "gateway") == {
+        FLUXER_ERLANG_NODE_NAME = "fluxer_gateway@10.0.0.2";
+        FLUXER_ERLANG_DIST_INTERFACE = "{10,0,0,2}";
+        FLUXER_GATEWAY_CLUSTER_ENABLED = "true";
+        FLUXER_GATEWAY_CLUSTER_STATIC_PEERS = "fluxer_gateway@10.0.0.2,fluxer_gateway@10.0.0.3";
+      };
+    "a gateway cluster opens the distribution port to its peers only" =
+      lib.hasInfix ''
+        iptables -A nixos-fw -p tcp -s 10.0.0.2 --dport 9100 -j nixos-fw-accept
+        iptables -A nixos-fw -p tcp -s 10.0.0.3 --dport 9100 -j nixos-fw-accept
+      '' gatewayNode.networking.firewall.extraCommands
+      &&
+        lib.hasInfix "ip saddr { 10.0.0.2, 10.0.0.3 } tcp dport { 9100 } accept"
+          (clusterNode {
+            networking.nftables.enable = true;
+          }).networking.firewall.extraInputRules;
+    "a gateway cluster needs a shared cookie" = lib.any (lib.hasInfix "same Erlang cookie") (
+      failed (clusterNode {
+        services.fluxer.secrets = lib.mkForce { };
+      })
+    );
+    "the edge spreads gateway connections over every gateway" =
+      lib.hasInfix "import fluxer_upstream http://10.0.0.2:8081 http://10.0.0.3:8081"
+        gatewayNode.services.caddy.virtualHosts."chat.example.com".extraConfig;
+    "NATS requires a token" =
+      lib.hasInfix "/run/fluxer-nats/nats.conf" instance.systemd.services.nats.serviceConfig.ExecStart
+      &&
+        instance.systemd.services.nats.serviceConfig.LoadCredential == [
+          "token:/var/lib/fluxer-secrets/FLUXER_NATS_AUTH_TOKEN"
+        ];
+    "Valkey requires a password, which the services get in their URL" =
+      instance.services.redis.servers.fluxer.requirePassFile
+      == "/var/lib/fluxer-secrets/FLUXER_KV_PASSWORD"
+      && lib.elem "FLUXER_KV_URL:/run/fluxer-kv/FLUXER_KV_URL" (unit instance "api")
+      .serviceConfig.LoadCredential
+      && servicesWith instance "FLUXER_KV_PASSWORD" == [ ];
+    "shared backing services listen on the shared address" =
+      failed sharedBacking == [ ]
+      && sharedBacking.services.nats.settings.host == "10.0.0.1"
+      && sharedBacking.services.nats.settings.http == "127.0.0.1:8222"
+      && sharedBacking.services.redis.servers.fluxer.bind == "10.0.0.1"
+      && sharedBacking.services.meilisearch.listenAddress == "10.0.0.1"
+      && sharedBacking.services.postgresql.settings.listen_addresses == "localhost,10.0.0.1"
+      && lib.hasInfix "-s3.ip.bind=10.0.0.1" sharedBacking.systemd.services.fluxer-seaweedfs.serviceConfig.ExecStart
+      && (env sharedBacking "api").FLUXER_NATS_URL == "nats://10.0.0.1:4222";
+    "shared backing services take their clients only" =
+      lib.hasInfix "host fluxer fluxer 10.0.0.2/32 scram-sha-256" sharedBacking.services.postgresql.authentication
+      &&
+        lib.all
+          (
+            port:
+            lib.hasInfix "iptables -A nixos-fw -p tcp -s 10.0.0.2 --dport ${toString port} -j nixos-fw-accept" sharedBacking.networking.firewall.extraCommands
+          )
+          [
+            5432
+            6379
+            4222
+            7700
+            8333
+          ]
+      && sharedBacking.services.fluxer.generate ? FLUXER_POSTGRES_PASSWORD;
+    "sharing backing services on loopback is refused" =
+      lib.any (lib.hasInfix "clients needs a listenAddress")
+        (
+          failed (eval {
+            services.fluxer = {
+              enable = true;
+              domain = "chat.example.com";
+              backingServices.clients = [ "10.0.0.2" ];
+            };
+          })
+        );
+    "a remote worker puts its key-value URL together" =
+      failed remoteWorker == [ ]
+      && lib.hasInfix "'%s://:%s@%s' redis \"$password\"" remoteWorker.systemd.services.fluxer-kv-url.script
+      && lib.hasInfix "10.0.0.1:6379/0 >/run/fluxer-kv/FLUXER_KV_URL" remoteWorker.systemd.services.fluxer-kv-url.script
+      && lib.elem "FLUXER_KV_URL:/run/fluxer-kv/FLUXER_KV_URL" (unit remoteWorker "worker")
+      .serviceConfig.LoadCredential;
     "a remote LiveKit needs internalUrl" = lib.any (lib.hasInfix "internalUrl") (
       failed remoteWithoutInternalUrl
     );

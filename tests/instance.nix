@@ -97,16 +97,8 @@ pkgs.testers.runNixOSTest {
           server.fail(f"grep -qaFf {cookie} /proc/[0-9]*/cmdline")
           server.fail(f"grep -qaFf {cookie} /proc/$(systemctl show -P MainPID fluxer-gateway)/environ")
           server.succeed("test \"$(stat -c %a /run/fluxer-gateway/.erlang.cookie)\" = 600")
-          # The release's own tooling still finds the node, with the cookie file.
-          pong = server.succeed(
-              "out=$(runuser -u fluxer -- mktemp -d) &&"
-              " runuser -u fluxer -- env HOME=/run/fluxer-gateway RELX_OUT_FILE_PATH=$out"
-              " FLUXER_ERLANG_NODE_NAME=fluxer_gateway@127.0.0.1"
-              " FLUXER_ERLANG_DIST_PORT=${toString gateway.distributionPort}"
-              " ERL_DIST_PORT=${toString gateway.distributionPort} RELX_REPLACE_OS_VARS=true"
-            " 'FLUXER_ERLANG_DIST_INTERFACE={127,0,0,1}'"
-              " ${gateway.package}/lib/fluxer_gateway/bin/fluxer_gateway ping"
-          )
+          # The release's own tools still find the node, with the cookie file.
+          pong = server.succeed("fluxer-gateway-ctl ping")
           assert "pong" in pong, pong
 
       with subtest("statement statistics"):

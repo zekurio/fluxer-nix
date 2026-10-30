@@ -19,7 +19,7 @@ let
   edge = cfg.edge;
   base = cfg.admin.basePath;
 
-  proxy = target: "import fluxer_upstream ${target}";
+  proxy = targets: "import fluxer_upstream ${lib.concatStringsSep " " (lib.toList targets)}";
 in
 {
   options.services.fluxer = {
@@ -49,10 +49,14 @@ in
 
     endpoints = {
       gateway = mkOption {
-        type = types.str;
+        type = types.coercedTo types.str lib.singleton (types.nonEmptyListOf types.str);
         default = "http://${cfg.localAddress}:${toString cfg.gateway.port}";
         defaultText = lib.literalMD "`services.fluxer.gateway.port` on `services.fluxer.listenAddress`, or on loopback for a wildcard address";
-        description = "Where the edge reaches the gateway.";
+        example = [
+          "http://10.0.0.2:8081"
+          "http://10.0.0.3:8081"
+        ];
+        description = "Where the edge reaches the gateway. With several, it spreads connections over them.";
       };
       admin = mkOption {
         type = types.str;
@@ -96,7 +100,9 @@ in
       '';
       extraConfig = ''
         (fluxer_upstream) {
-          reverse_proxy {args[0]} {
+          reverse_proxy {args[:]} {
+            # Tries another upstream, or the same one again, if it cannot connect.
+            lb_try_duration 5s
             header_up X-Forwarded-For {client_ip}
             header_up X-Real-IP {client_ip}
             header_up -Forwarded

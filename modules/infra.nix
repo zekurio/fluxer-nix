@@ -34,9 +34,57 @@ let
 
   searchKey = cfg.secretFiles.FLUXER_SEARCH_API_KEY or null;
   s3Secret = cfg.secretFiles.FLUXER_S3_SECRET_ACCESS_KEY or null;
+  natsToken = cfg.secretFiles.FLUXER_NATS_AUTH_TOKEN or null;
+  postgresPassword = cfg.secretFiles.FLUXER_POSTGRES_PASSWORD or null;
+
+  backing = cfg.backingServices;
+  # Where the services on this host reach the backing services set up here.
+  backingHost =
+    if lib.hasInfix ":" backing.listenAddress then
+      "[${backing.listenAddress}]"
+    else
+      backing.listenAddress;
+  shared = backing.clients != [ ];
+  firewallRules = import ./firewall-rules.nix { inherit lib; };
+  afterSecrets = lib.optional cfg.generateSecrets "fluxer-secrets.service";
+
+  # The services read the Valkey password only inside FLUXER_KV_URL, so the URL
+  # is put together at boot, out of the store.
+  kvUrlFile = "/run/fluxer-kv/FLUXER_KV_URL";
+  kvUrl = lib.splitString "://" cfg.valkey.url;
+  composeKvUrl = cfg.valkey.passwordFile != null && (cfg.secrets.FLUXER_KV_URL or null) == kvUrlFile;
+
+  jq = lib.getExe pkgs.jq;
 in
 {
   options.services.fluxer = {
+    backingServices = {
+      listenAddress = mkOption {
+        type = types.str;
+        default = "127.0.0.1";
+        example = "10.0.0.1";
+        description = ''
+          The address the backing services set up on this host listen on, and
+          where the services on this host reach them. To share them with other
+          hosts, give an address those hosts reach, and list them in `clients`.
+          SeaweedFS shares only its S3 port; its other ports stay on loopback.
+        '';
+      };
+      clients = mkOption {
+        type = types.listOf (types.strMatching "([0-9]{1,3}\\.){3}[0-9]{1,3}");
+        default = [ ];
+        example = [ "10.0.0.2" ];
+        description = ''
+          The IPv4 addresses of hosts that run other parts of the instance and
+          use the backing services set up here. The firewall opens their ports
+          to these hosts only, and PostgreSQL takes them with the password in
+          services.fluxer.secrets.FLUXER_POSTGRES_PASSWORD. None of the backing
+          services encrypt their traffic, so keep it on a private network, such
+          as a WireGuard tunnel.
+        '';
+      };
+    };
+
     postgres = {
       createLocally = createLocally "PostgreSQL";
       host = mkOption {
@@ -59,8 +107,9 @@ in
         default = cfg.user;
         defaultText = literalExpression "config.services.fluxer.user";
         description = ''
-          Database role. It must own the database. For a server elsewhere, put
-          its password in services.fluxer.secrets.FLUXER_POSTGRES_PASSWORD.
+          Database role. It must own the database. For a server elsewhere, or
+          the local one shared with other hosts, its password goes in
+          services.fluxer.secrets.FLUXER_POSTGRES_PASSWORD.
         '';
       };
       statementStats = mkOption {
@@ -84,9 +133,29 @@ in
       };
       url = mkOption {
         type = types.str;
-        default = "redis://127.0.0.1:${toString cfg.valkey.port}/0";
-        defaultText = literalExpression ''"redis://127.0.0.1:''${toString port}/0"'';
-        description = "URL of the key-value store. Put a URL with a password in services.fluxer.secrets.FLUXER_KV_URL instead.";
+        default = "redis://${backingHost}:${toString cfg.valkey.port}/0";
+        defaultText = literalExpression ''"redis://''${backingServices.listenAddress}:''${toString port}/0"'';
+        description = ''
+          URL of the key-value store, without the password. With
+          `passwordFile`, the services get it with the password added, as
+          FLUXER_KV_URL. A whole URL in services.fluxer.secrets.FLUXER_KV_URL
+          replaces both.
+        '';
+      };
+      passwordFile = mkOption {
+        type = types.nullOr types.externalPath;
+        default =
+          if cfg.generateSecrets && cfg.valkey.createLocally then
+            "/var/lib/fluxer-secrets/FLUXER_KV_PASSWORD"
+          else
+            null;
+        defaultText = literalExpression "the generated password, with createLocally and generateSecrets";
+        example = "/run/secrets/fluxer-valkey";
+        description = ''
+          The password of the key-value store. The local Valkey requires it, and
+          the services get it inside FLUXER_KV_URL. Only letters and digits keep
+          it simple: the URL encodes anything else.
+        '';
       };
     };
 
@@ -99,9 +168,13 @@ in
       };
       url = mkOption {
         type = types.str;
-        default = "nats://127.0.0.1:${toString cfg.nats.port}";
-        defaultText = literalExpression ''"nats://127.0.0.1:''${toString port}"'';
-        description = "URL of the NATS server. Its token, if any, goes in services.fluxer.secrets.FLUXER_NATS_AUTH_TOKEN.";
+        default = "nats://${backingHost}:${toString cfg.nats.port}";
+        defaultText = literalExpression ''"nats://''${backingServices.listenAddress}:''${toString port}"'';
+        description = ''
+          URL of the NATS server. Its token goes in
+          services.fluxer.secrets.FLUXER_NATS_AUTH_TOKEN; the local server
+          requires it.
+        '';
       };
     };
 
@@ -114,8 +187,8 @@ in
       };
       url = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString cfg.search.port}";
-        defaultText = literalExpression ''"http://127.0.0.1:''${toString port}"'';
+        default = "http://${backingHost}:${toString cfg.search.port}";
+        defaultText = literalExpression ''"http://''${backingServices.listenAddress}:''${toString port}"'';
         description = ''
           URL of the Meilisearch server. Its master key, at least 16 bytes, goes
           in services.fluxer.secrets.FLUXER_SEARCH_API_KEY.
@@ -126,8 +199,8 @@ in
     s3 = {
       endpoint = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString seaweed.port}";
-        defaultText = literalExpression ''"http://127.0.0.1:''${toString s3.seaweedfs.port}"'';
+        default = "http://${backingHost}:${toString seaweed.port}";
+        defaultText = literalExpression ''"http://''${backingServices.listenAddress}:''${toString s3.seaweedfs.port}"'';
         description = "The S3 endpoint the services use.";
       };
       publicEndpoint = mkOption {
@@ -212,6 +285,68 @@ in
       services.fluxer.generate = {
         FLUXER_SEARCH_API_KEY = "hex32";
         FLUXER_S3_SECRET_ACCESS_KEY = "hex32";
+      }
+      // lib.optionalAttrs cfg.nats.createLocally { FLUXER_NATS_AUTH_TOKEN = "hex32"; }
+      # Read by Valkey itself; the services get it inside FLUXER_KV_URL.
+      // lib.optionalAttrs cfg.valkey.createLocally { FLUXER_KV_PASSWORD = "hex32"; }
+      // lib.optionalAttrs (cfg.postgres.createLocally && shared) {
+        FLUXER_POSTGRES_PASSWORD = "hex32";
+      };
+
+      services.fluxer.secrets.FLUXER_KV_URL = mkIf (cfg.valkey.passwordFile != null) (
+        lib.mkDefault kvUrlFile
+      );
+
+      assertions = [
+        {
+          assertion =
+            shared
+            -> !(lib.elem backing.listenAddress [
+              "127.0.0.1"
+              "::1"
+              "localhost"
+            ]);
+          message = "services.fluxer.backingServices.clients needs a listenAddress the other hosts reach.";
+        }
+      ];
+
+      networking.firewall = firewallRules {
+        inherit config;
+        addresses = backing.clients;
+        ports =
+          lib.optional cfg.postgres.createLocally cfg.postgres.port
+          ++ lib.optional cfg.valkey.createLocally cfg.valkey.port
+          ++ lib.optional cfg.nats.createLocally cfg.nats.port
+          ++ lib.optional cfg.search.createLocally cfg.search.port
+          ++ lib.optional seaweed.enable seaweed.port;
+      };
+
+      systemd.services.fluxer-kv-url = mkIf composeKvUrl {
+        description = "Put together the Fluxer key-value URL";
+        wantedBy = [
+          "multi-user.target"
+          "fluxer-api.service"
+          "fluxer-worker.service"
+        ];
+        before = [
+          "fluxer-api.service"
+          "fluxer-worker.service"
+        ];
+        after = afterSecrets;
+        wants = afterSecrets;
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          RuntimeDirectory = "fluxer-kv";
+          RuntimeDirectoryMode = "0700";
+          UMask = "0077";
+          LoadCredential = [ "password:${cfg.valkey.passwordFile}" ];
+        };
+        script = ''
+          password=$(head -n 1 "$CREDENTIALS_DIRECTORY/password" | ${jq} -Rj @uri)
+          printf '%s://:%s@%s' ${lib.escapeShellArg (lib.head kvUrl)} "$password" \
+            ${lib.escapeShellArg (lib.concatStringsSep "://" (lib.tail kvUrl))} >${kvUrlFile}
+        '';
       };
 
       services.fluxer.settings = mapDefaults (
@@ -265,6 +400,10 @@ in
           assertion = cfg.postgres.database == cfg.postgres.user;
           message = "The local database has to be named after its role, services.fluxer.postgres.user.";
         }
+        {
+          assertion = shared -> postgresPassword != null;
+          message = "Sharing the local PostgreSQL needs services.fluxer.secrets.FLUXER_POSTGRES_PASSWORD, or services.fluxer.generateSecrets.";
+        }
       ];
 
       # The API checks on startup whether pg_stat_statements is preloaded,
@@ -278,15 +417,50 @@ in
       ''
       + lib.optionalString cfg.postgres.statementStats ''
         psql -d ${lib.escapeShellArg cfg.postgres.database} -tAc 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements'
+      ''
+      # The services here use the socket; the clients sign in with the
+      # password, which psql reads from the file itself.
+      + lib.optionalString (shared && postgresPassword != null) ''
+        psql -v ON_ERROR_STOP=1 <<'EOF'
+        \set password `cat "$CREDENTIALS_DIRECTORY/password"`
+        ALTER ROLE "${cfg.postgres.user}" PASSWORD :'password';
+        EOF
       '';
     })
 
+    (mkIf (cfg.postgres.createLocally && shared) {
+      services.postgresql = {
+        settings.listen_addresses = lib.mkOverride 90 "localhost,${backing.listenAddress}";
+        authentication = lib.concatMapStrings (
+          client: "host ${cfg.postgres.database} ${cfg.postgres.user} ${client}/32 scram-sha-256\n"
+        ) backing.clients;
+      };
+      systemd.services.postgresql-setup = {
+        after = afterSecrets;
+        wants = afterSecrets;
+        serviceConfig.LoadCredential = lib.optional (
+          postgresPassword != null
+        ) "password:${postgresPassword}";
+      };
+    })
+
     (mkIf cfg.valkey.createLocally {
+      assertions = [
+        {
+          assertion = cfg.valkey.passwordFile != null;
+          message = "The local Valkey needs services.fluxer.valkey.passwordFile, or services.fluxer.generateSecrets.";
+        }
+      ];
       # nixpkgs' Redis module picks one package for every server it runs.
       services.redis.package = lib.mkDefault pkgs.valkey;
+      systemd.services.redis-fluxer = {
+        after = afterSecrets;
+        wants = afterSecrets;
+      };
       services.redis.servers.fluxer = {
         enable = true;
-        bind = "127.0.0.1";
+        bind = backing.listenAddress;
+        requirePassFile = cfg.valkey.passwordFile;
         inherit (cfg.valkey) port;
         appendOnly = true;
         save = [ ];
@@ -299,18 +473,42 @@ in
     })
 
     (mkIf cfg.nats.createLocally {
+      assertions = [
+        {
+          assertion = natsToken != null;
+          message = "The local NATS needs services.fluxer.secrets.FLUXER_NATS_AUTH_TOKEN, or services.fluxer.generateSecrets.";
+        }
+      ];
       services.nats = {
         enable = true;
         jetstream = true;
         inherit (cfg.nats) port;
         serverName = "fluxer";
         settings = {
-          host = "127.0.0.1";
-          http_port = 8222;
+          host = backing.listenAddress;
+          http = "127.0.0.1:8222";
           jetstream = {
             max_memory_store = 64 * 1024 * 1024;
             max_file_store = 10 * 1024 * 1024 * 1024;
           };
+        };
+      };
+      # The server takes the token from its configuration, so the module's
+      # configuration gets it added at start, from the file.
+      systemd.services.nats = {
+        after = afterSecrets;
+        wants = afterSecrets;
+        serviceConfig = {
+          LoadCredential = lib.optional (natsToken != null) "token:${natsToken}";
+          RuntimeDirectory = "fluxer-nats";
+          RuntimeDirectoryMode = "0700";
+          ExecStartPre = pkgs.writeShellScript "fluxer-nats-config" ''
+            ${jq} --rawfile token "$CREDENTIALS_DIRECTORY/token" \
+              '.authorization.token = ($token | rtrimstr("\n"))' \
+              ${(pkgs.formats.json { }).generate "nats.conf" config.services.nats.settings} \
+              >/run/fluxer-nats/nats.conf
+          '';
+          ExecStart = lib.mkForce "${pkgs.nats-server}/bin/nats-server -c /run/fluxer-nats/nats.conf";
         };
       };
     })
@@ -324,7 +522,7 @@ in
       ];
       services.meilisearch = {
         enable = true;
-        listenAddress = "127.0.0.1";
+        listenAddress = backing.listenAddress;
         listenPort = cfg.search.port;
         masterKeyFile = searchKey;
         settings = {
@@ -362,6 +560,8 @@ in
             "-s3.iam=false"
             "-ip=127.0.0.1"
             "-ip.bind=127.0.0.1"
+            # Only S3 is shared; the master, volume and filer stay here.
+            "-s3.ip.bind=${backing.listenAddress}"
             "-master.port=${toString seaweed.masterPort}"
             # The volume server defaults to 8080, the API's port.
             "-volume.port=8380"

@@ -190,8 +190,8 @@ let
         FLUXER_ERLANG_NODE_NAME = "fluxer_gateway@127.0.0.1";
         FLUXER_ERLANG_DIST_PORT = cfg.gateway.distributionPort;
         # Distribution on loopback, at a fixed port the release tells the node
-        # about, so no epmd starts. The node is on its own: clustering would
-        # need another address and node name.
+        # about, so no epmd starts. services.fluxer.gateway.cluster moves it to
+        # an address other gateways reach.
         FLUXER_ERLANG_DIST_INTERFACE = "{127,0,0,1}";
         ERL_DIST_PORT = cfg.gateway.distributionPort;
         # Where the release writes its generated vm.args and sys.config, and
@@ -395,7 +395,9 @@ let
     };
 
   claimedSecrets = lib.unique (lib.concatMap (c: c.secrets) (lib.attrValues components));
-  unclaimedSecrets = lib.filter (n: !lib.elem n claimedSecrets) (lib.attrNames cfg.secretFiles);
+  # Only given ones: a generated secret no service claims is for a backing
+  # service, such as the Valkey password.
+  unclaimedSecrets = lib.filter (n: !lib.elem n claimedSecrets) (lib.attrNames cfg.secrets);
 
   voiceSecret = lib.optionalAttrs (cfg.livekit.url != null && cfg.livekit.apiSecretFile != null) {
     FLUXER_LIVEKIT_API_SECRET = cfg.livekit.apiSecretFile;
