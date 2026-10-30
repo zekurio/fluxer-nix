@@ -125,6 +125,64 @@ let
     };
   };
 
+  # Two hosts on the module's WireGuard tunnel. main shares its backing
+  # services with worker; worker cannot be reached from outside.
+  tunnelHost =
+    name: extra:
+    eval {
+      imports = [ extra ];
+      networking.hostName = name;
+      services.fluxer = {
+        domain = "chat.example.com";
+        tunnel.wireguard = {
+          enable = true;
+          hosts = {
+            main = {
+              address = "10.77.0.1";
+              publicKey = "main-key";
+              endpoint = "main.example.com:51820";
+            };
+            worker = {
+              address = "10.77.0.2";
+              publicKey = "worker-key";
+            };
+          };
+          privateKeyFile = "/run/secrets/wireguard";
+        };
+      };
+    };
+  tunnelMain = tunnelHost "main" {
+    services.fluxer = {
+      enable = true;
+      backingServices.clients = [ "10.77.0.2" ];
+      secrets.FLUXER_ERLANG_COOKIE = "/run/secrets/erlang-cookie";
+      gateway.cluster = {
+        enable = true;
+        peers = [
+          "10.77.0.1"
+          "10.77.0.2"
+        ];
+        openFirewall = true;
+      };
+    };
+  };
+  tunnelWorker = tunnelHost "worker" { services.fluxer.worker.enable = true; };
+
+  # The host with the backing services on a tunnel set up elsewhere.
+  tailscaleMain = eval {
+    networking.nftables.enable = true;
+    services.fluxer = {
+      enable = true;
+      domain = "chat.example.com";
+      tunnel = {
+        address = "100.64.0.1";
+        interface = "tailscale0";
+      };
+      backingServices.clients = [ "100.64.0.2" ];
+    };
+  };
+  nonlocalBind = config: config.boot.kernel.sysctl."net.ipv4.ip_nonlocal_bind" or null;
+
   unit = config: name: config.systemd.services."fluxer-${name}";
   env = config: name: (unit config name).environment;
   credentials =
@@ -315,6 +373,74 @@ let
       && lib.hasInfix "10.0.0.1:6379/0 >/run/fluxer-kv/FLUXER_KV_URL" remoteWorker.systemd.services.fluxer-kv-url.script
       && lib.elem "FLUXER_KV_URL:/run/fluxer-kv/FLUXER_KV_URL" (unit remoteWorker "worker")
       .serviceConfig.LoadCredential;
+    "the module's WireGuard tunnel connects every host" =
+      let
+        peers =
+          config:
+          map (p: {
+            inherit (p)
+              name
+              publicKey
+              endpoint
+              allowedIPs
+              persistentKeepalive
+              ;
+          }) config.networking.wireguard.interfaces.wg-fluxer.peers;
+        main = tunnelMain.networking.wireguard.interfaces.wg-fluxer;
+      in
+      failed tunnelMain == [ ]
+      && failed tunnelWorker == [ ]
+      && main.ips == [ "10.77.0.1/32" ]
+      && main.listenPort == 51820
+      && main.privateKeyFile == "/run/secrets/wireguard"
+      && lib.elem 51820 tunnelMain.networking.firewall.allowedUDPPorts
+      &&
+        peers tunnelMain == [
+          {
+            name = "worker";
+            publicKey = "worker-key";
+            endpoint = null;
+            allowedIPs = [ "10.77.0.2/32" ];
+            persistentKeepalive = null;
+          }
+        ]
+      &&
+        peers tunnelWorker == [
+          {
+            name = "main";
+            publicKey = "main-key";
+            endpoint = "main.example.com:51820";
+            allowedIPs = [ "10.77.0.1/32" ];
+            persistentKeepalive = 25;
+          }
+        ];
+    "shared backing services and the gateway cluster use the tunnel" =
+      tunnelMain.services.redis.servers.fluxer.bind == "10.77.0.1"
+      && tunnelMain.services.postgresql.settings.listen_addresses == "localhost,10.77.0.1"
+      && (env tunnelMain "gateway").FLUXER_ERLANG_NODE_NAME == "fluxer_gateway@10.77.0.1"
+      &&
+        lib.all
+          (
+            port:
+            lib.hasInfix "iptables -A nixos-fw -i wg-fluxer -p tcp -s 10.77.0.2 --dport ${toString port} -j nixos-fw-accept" tunnelMain.networking.firewall.extraCommands
+          )
+          [
+            5432
+            6379
+            9100
+          ];
+    "the services bind early only to a tunnel that comes up late" =
+      nonlocalBind tunnelMain == null
+      && nonlocalBind (tunnelHost "main" { networking.wireguard.useNetworkd = true; }) == 1
+      && nonlocalBind tailscaleMain == 1;
+    "a tunnel set up elsewhere scopes the shared ports to its interface" =
+      failed tailscaleMain == [ ]
+      && tailscaleMain.networking.wireguard.interfaces == { }
+      && tailscaleMain.services.nats.settings.host == "100.64.0.1"
+      && lib.hasInfix ''iifname "tailscale0" ip saddr { 100.64.0.2 } tcp dport { 5432, 6379, 4222, 7700, 8333 } accept'' tailscaleMain.networking.firewall.extraInputRules;
+    "a host missing from the tunnel's hosts is refused" =
+      lib.any (lib.hasInfix "no entry for this host, other")
+        (failed (tunnelHost "other" { }));
     "a remote LiveKit needs internalUrl" = lib.any (lib.hasInfix "internalUrl") (
       failed remoteWithoutInternalUrl
     );

@@ -52,13 +52,14 @@ in
     enable = lib.mkEnableOption ''
       clustering with the gateways on other hosts. The nodes connect over
       Erlang distribution, which is not encrypted, and whoever holds the cookie
-      can run code on every node. Run it on a private network, such as a
-      WireGuard tunnel, and give every node the same
+      can run code on every node. Run it on a private network, such as the
+      one in services.fluxer.tunnel, and give every node the same
       services.fluxer.secrets.FLUXER_ERLANG_COOKIE'';
 
     address = mkOption {
       type = types.nullOr ipv4;
-      default = null;
+      default = cfg.tunnel.address;
+      defaultText = lib.literalExpression "config.services.fluxer.tunnel.address";
       example = "10.0.0.2";
       description = ''
         This host's IPv4 address on the network the gateways share. The node is
@@ -84,7 +85,10 @@ in
     openFirewall = mkOption {
       type = types.bool;
       default = false;
-      description = "Open the distribution port to the peers, and to nothing else.";
+      description = ''
+        Open the distribution port to the peers, and to nothing else. With
+        services.fluxer.tunnel.interface, it opens on the tunnel only.
+      '';
     };
   };
 
@@ -124,6 +128,7 @@ in
 
       networking.firewall = mkIf cluster.openFirewall (firewallRules {
         inherit config;
+        inherit (cfg.tunnel) interface;
         addresses = cluster.peers;
         ports = [ cfg.gateway.distributionPort ];
       });

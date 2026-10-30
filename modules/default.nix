@@ -7,5 +7,6 @@
     ./livekit.nix
     ./secrets.nix
     ./services.nix
+    ./tunnel.nix
   ];
 }

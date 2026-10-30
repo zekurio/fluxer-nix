@@ -1,13 +1,25 @@
-# An instance on two hosts. The server shares its backing services and runs
-# the API, a gateway and the edge; node2 runs a second gateway, clustered
-# with the first, and the instance's worker, against the server's backing
-# services.
+# An instance on two hosts, over the module's WireGuard tunnel. The server
+# shares its backing services and runs the API, a gateway and the edge; node2
+# runs a second gateway, clustered with the first, and the instance's worker,
+# against the server's backing services. node2 has no endpoint, as for a host
+# behind NAT.
 { pkgs, module }:
 
 let
   inherit (pkgs) lib;
   domain = "chat.example.test";
-  ip = nodes: name: nodes.${name}.networking.primaryIPAddress;
+  keys = import "${pkgs.path}/nixos/tests/wireguard/snakeoil-keys.nix";
+  tunnel = {
+    server = {
+      address = "10.77.0.1";
+      key = keys.peer0;
+    };
+    node2 = {
+      address = "10.77.0.2";
+      key = keys.peer1;
+    };
+  };
+  ip = name: tunnel.${name}.address;
 
   shared =
     { nodes, config, ... }:
@@ -15,18 +27,32 @@ let
       imports = [ module ];
       # A cluster needs the cookie given, not generated. Test secrets may sit
       # in the store.
-      environment.etc."fluxer/FLUXER_ERLANG_COOKIE" = {
-        text = "cookie-shared-by-both-gateways";
-        mode = "0400";
+      environment.etc = {
+        "fluxer/FLUXER_ERLANG_COOKIE" = {
+          text = "cookie-shared-by-both-gateways";
+          mode = "0400";
+        };
+        "fluxer/wireguard-key" = {
+          text = tunnel.${config.networking.hostName}.key.privateKey;
+          mode = "0400";
+        };
       };
       services.fluxer = {
         inherit domain;
         secrets.FLUXER_ERLANG_COOKIE = "/etc/fluxer/FLUXER_ERLANG_COOKIE";
-        listenAddress = config.networking.primaryIPAddress;
+        tunnel.wireguard = {
+          enable = true;
+          hosts = lib.mapAttrs (name: host: {
+            inherit (host) address;
+            publicKey = lib.trim host.key.publicKey;
+            endpoint = if name == "server" then "${nodes.server.networking.primaryIPAddress}:51820" else null;
+          }) tunnel;
+          privateKeyFile = "/etc/fluxer/wireguard-key";
+        };
+        listenAddress = config.services.fluxer.tunnel.address;
         gateway.cluster = {
           enable = true;
-          address = config.networking.primaryIPAddress;
-          peers = map (ip nodes) [
+          peers = map ip [
             "server"
             "node2"
           ];
@@ -40,7 +66,7 @@ pkgs.testers.runNixOSTest {
   name = "fluxer-multi-host";
 
   nodes.server =
-    { nodes, config, ... }:
+    { ... }:
     {
       imports = [ shared ];
       virtualisation = {
@@ -51,10 +77,8 @@ pkgs.testers.runNixOSTest {
 
       services.fluxer = {
         enable = true;
-        backingServices = {
-          listenAddress = config.networking.primaryIPAddress;
-          clients = [ (ip nodes "node2") ];
-        };
+        # They listen on the tunnel.
+        backingServices.clients = [ (ip "node2") ];
         # The worker runs on node2. Left out to keep the test small.
         worker.enable = false;
         livekit.enable = false;
@@ -62,13 +86,13 @@ pkgs.testers.runNixOSTest {
         admin.enable = false;
         appProxy.enable = false;
         mediaProxy.enable = false;
-        endpoints.gateway = map (n: "http://${ip nodes n}:8081") [
+        endpoints.gateway = map (n: "http://${ip n}:8081") [
           "server"
           "node2"
         ];
       };
       # node2's gateway asks the API for its configuration.
-      networking.firewall.allowedTCPPorts = [ 8080 ];
+      networking.firewall.interfaces.wg-fluxer.allowedTCPPorts = [ 8080 ];
 
       services.caddy.globalConfig = lib.mkAfter "local_certs";
       networking.hosts."127.0.0.1" = [ domain ];
@@ -77,7 +101,7 @@ pkgs.testers.runNixOSTest {
   nodes.node2 =
     { nodes, ... }:
     let
-      server = ip nodes "server";
+      server = ip "server";
       # The server's generated secrets, copied over by the test script.
       copied = lib.filter (n: n != "FLUXER_KV_PASSWORD") (
         lib.attrNames (removeAttrs nodes.server.services.fluxer.generate [ "FLUXER_ERLANG_COOKIE" ])
@@ -111,23 +135,32 @@ pkgs.testers.runNixOSTest {
       });
 
       # For the edge on the server.
-      networking.firewall.allowedTCPPorts = [ 8081 ];
+      networking.firewall.interfaces.wg-fluxer.allowedTCPPorts = [ 8081 ];
     };
 
   testScript =
     { nodes, ... }:
     ''
       ips = {
-          server: "${ip nodes "server"}",
-          node2: "${ip nodes "node2"}",
+          server: "${ip "server"}",
+          node2: "${ip "node2"}",
       }
       server_ip = ips[server]
 
       start_all()
 
-      with subtest("the server's backing services refuse clients without credentials"):
+      with subtest("the hosts reach each other through the tunnel"):
           server.wait_for_unit("fluxer-api.service")
           node2.wait_for_unit("multi-user.target")
+          node2.wait_until_succeeds(f"ping -c 1 -W 2 {server_ip}", timeout=60)
+          server.succeed(f"ping -c 1 -W 2 {ips[node2]}")
+          # The shared ports open on the tunnel only.
+          rules = server.succeed("iptables -S nixos-fw | grep -F -- '--dport 6379'").splitlines()
+          assert rules and all("-i wg-fluxer" in r and "${ip "node2"}/32" in r for r in rules), rules
+          # Nothing is shared on the plain network.
+          node2.fail("curl -s -o /dev/null --max-time 5 http://${nodes.server.networking.primaryIPAddress}:8333")
+
+      with subtest("the server's backing services refuse clients without credentials"):
           node2.succeed(
               f"timeout 5 bash -c 'exec 3<>/dev/tcp/{server_ip}/4222; head -c 2048 <&3'"
               " | grep -F '\"auth_required\":true'"

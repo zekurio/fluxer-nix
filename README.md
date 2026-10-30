@@ -178,7 +178,8 @@ services.fluxer.backingServices = {
 This opens their ports to those hosts only, and lets them into PostgreSQL
 with the password in `FLUXER_POSTGRES_PASSWORD`. SeaweedFS shares only its S3
 port. None of the backing services encrypt their traffic, so keep it on a
-private network, such as a WireGuard tunnel.
+private network, such as the [tunnel](#tunnel). With a tunnel,
+`listenAddress` defaults to its address.
 
 A host that runs other parts, here the worker, points at them:
 
@@ -214,7 +215,7 @@ services.fluxer = {
   secrets.FLUXER_ERLANG_COOKIE = config.age.secrets.fluxer-erlang-cookie.path;
   gateway.cluster = {
     enable = true;
-    address = "10.0.0.2";                 # this host, on the private network
+    address = "10.0.0.2";                 # this host; defaults to the tunnel address
     peers = [ "10.0.0.2" "10.0.0.3" ];    # every gateway, this one included
     openFirewall = true;                  # port 9100, from the peers only
   };
@@ -229,13 +230,72 @@ services.fluxer.endpoints.gateway = [ "http://10.0.0.2:8081" "http://10.0.0.3:80
 
 Erlang distribution is not encrypted, and the cookie lets anyone who reaches
 the port run code on every node. Keep the addresses on a private network, such
-as a WireGuard tunnel. Upstream's Helm chart relies on the cluster network the
-same way. With no epmd, every node uses the one distribution port,
+as the [tunnel](#tunnel). Upstream's Helm chart relies on the cluster network
+the same way. With no epmd, every node uses the one distribution port,
 `services.fluxer.gateway.distributionPort`.
 
 `fluxer-gateway-ctl`, run as root on a gateway host, runs the release's own
 commands against the running node, for example `fluxer-gateway-ctl ping` or
 `fluxer-gateway-ctl rpc erlang nodes`.
+
+### Tunnel
+
+Nothing Fluxer's hosts send each other is encrypted, so it belongs on a
+private network. `services.fluxer.tunnel` sets one up with WireGuard, or fits
+the instance to one you already run.
+
+The module's WireGuard tunnel takes the same list of hosts on every host, for
+example from a file they all import:
+
+```nix
+services.fluxer.tunnel.wireguard = {
+  enable = true;
+  hosts = {
+    main = {
+      address = "10.77.0.1";
+      publicKey = "…";                       # wg pubkey < its private key
+      endpoint = "main.example.com:51820";   # where the others reach it
+    };
+    worker = {
+      address = "10.77.0.2";
+      publicKey = "…";                       # no endpoint: behind NAT
+    };
+  };
+  privateKeyFile = config.sops.secrets.fluxer-wireguard.path;
+};
+```
+
+Each host finds its own entry by `networking.hostName`, or by
+`wireguard.name`, and connects to the others on the interface `wg-fluxer`,
+UDP port 51820. A host without an endpoint connects to the ones with one and
+keeps the connection open.
+
+For a tunnel you already run, such as Tailscale, Nebula or Netbird, give its
+address and interface:
+
+```nix
+services.fluxer.tunnel = {
+  address = "100.64.0.1";
+  interface = "tailscale0";
+};
+```
+
+With either:
+
+- The backing services, when shared with `clients`, and the gateway cluster
+  listen on the tunnel address.
+- The ports the module opens to other hosts open on the tunnel interface
+  only, and there still only to the listed addresses.
+- The services can start before the tunnel has its address. Most tunnels come
+  up after them, so the module sets `net.ipv4.ip_nonlocal_bind`, which lets a
+  service listen on an address the host does not have yet. The module's own
+  WireGuard tunnel comes up before the services and needs this only under
+  networkd.
+
+The Fluxer services themselves listen on `services.fluxer.listenAddress`. For
+other hosts to reach one, such as a gateway behind the edge on another host,
+set it to `config.services.fluxer.tunnel.address` and open the port on the
+tunnel: `networking.firewall.interfaces.wg-fluxer.allowedTCPPorts = [ 8081 ];`.
 
 ### Configuration and secrets
 
@@ -386,12 +446,14 @@ so they take a while to build.
   ports, that a room creates a webhook signed with the shared secret, and that
   a service running as a dynamic user reads a root-only secret through
   `FLUXER_<NAME>_FILE`.
-- `multi-host`: an instance on two VMs. One shares its backing services and
-  runs the API, a gateway and the edge; the other runs the worker against
-  those backing services, and a second gateway clustered with the first. It
-  checks that NATS and Valkey refuse clients without credentials, that
-  SeaweedFS shares only S3, that the worker starts, that the gateways join,
-  and that the edge keeps serving the gateway when one node stops.
+- `multi-host`: an instance on two VMs, over the module's WireGuard tunnel.
+  One shares its backing services and runs the API, a gateway and the edge;
+  the other, with no endpoint as if behind NAT, runs the worker against those
+  backing services, and a second gateway clustered with the first. It checks
+  that the shared ports open on the tunnel only, that NATS and Valkey refuse
+  clients without credentials, that SeaweedFS shares only S3, that the worker
+  starts, that the gateways join, and that the edge keeps serving the gateway
+  when one node stops.
 - `instance`: a VM with a whole instance and generated secrets, checked
   through every service's health endpoint and the edge. It also checks that
   the services listen on loopback only, that no process shows the Erlang
@@ -405,9 +467,13 @@ access, a whole instance boots on one host with generated secrets, every
 service passes its health check, and the edge serves the web app, the static
 assets, the API and the instance's discovery document.
 
+Verified by the `multi-host` test: two hosts over the WireGuard tunnel, one
+with the backing services, the API and a gateway, the other with the worker
+and a second gateway in the same cluster.
+
 Not verified yet: signing up and signing in, messages over the gateway, voice
-calls, uploads through the media proxy, push notifications, an instance spread
-over several hosts, and `aarch64-linux`.
+calls, uploads through the media proxy, push notifications, and
+`aarch64-linux`.
 
 Known issues:
 
@@ -419,6 +485,10 @@ Known issues:
   that service will not get it.
 - The release's `ping` and `rpc` commands, which `fluxer-gateway-ctl` runs,
   pass the cookie on the command line of `erl_call` while they run.
+- The multi-host test runs only the worker and a gateway away from the
+  backing services. The API, the media proxy, push, the admin panel and the
+  internal services take the same settings on another host, but no test runs
+  them there.
 - The multi-host test checks that the gateways join each other and that the
   edge keeps serving when one stops. It does not check that a session on one
   node reaches users on the other.

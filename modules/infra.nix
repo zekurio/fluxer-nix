@@ -61,7 +61,9 @@ in
     backingServices = {
       listenAddress = mkOption {
         type = types.str;
-        default = "127.0.0.1";
+        default =
+          if backing.clients != [ ] && cfg.tunnel.address != null then cfg.tunnel.address else "127.0.0.1";
+        defaultText = lib.literalMD "`services.fluxer.tunnel.address` when shared with `clients`, `127.0.0.1` otherwise";
         example = "10.0.0.1";
         description = ''
           The address the backing services set up on this host listen on, and
@@ -77,10 +79,11 @@ in
         description = ''
           The IPv4 addresses of hosts that run other parts of the instance and
           use the backing services set up here. The firewall opens their ports
-          to these hosts only, and PostgreSQL takes them with the password in
+          to these hosts only, on services.fluxer.tunnel.interface when set,
+          and PostgreSQL takes them with the password in
           services.fluxer.secrets.FLUXER_POSTGRES_PASSWORD. None of the backing
           services encrypt their traffic, so keep it on a private network, such
-          as a WireGuard tunnel.
+          as the one in services.fluxer.tunnel.
         '';
       };
     };
@@ -312,6 +315,7 @@ in
 
       networking.firewall = firewallRules {
         inherit config;
+        inherit (cfg.tunnel) interface;
         addresses = backing.clients;
         ports =
           lib.optional cfg.postgres.createLocally cfg.postgres.port
