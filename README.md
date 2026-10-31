@@ -147,6 +147,18 @@ process.
 On one host the API counts as started once it answers, so the services that
 need it at startup, the gateway and push among them, start after that.
 
+The services run as the `fluxer` user and group, which the module creates.
+`services.fluxer.user` and `group` take others, which then have to exist,
+such as a user of your own or one from a directory. With the local database
+the user is also the database role.
+
+The instance's units run in `system-fluxer.slice`, so `systemctl status
+system-fluxer.slice` shows them together with their memory and CPU: the
+Fluxer services, and the backing services and LiveKit when the module runs
+them. PostgreSQL stays out, as other services on the host share it; NATS,
+Meilisearch and LiveKit are the host's single instances too, so their slice is
+a default you can override.
+
 The backing services each have `createLocally` (`seaweedfs.enable` for S3), on
 with `services.fluxer.enable`, and an address for a server elsewhere:
 `services.fluxer.postgres`, `valkey`, `nats`, `search` and `s3`.

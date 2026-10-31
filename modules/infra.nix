@@ -461,6 +461,7 @@ in
       systemd.services.redis-fluxer = {
         after = afterSecrets;
         wants = afterSecrets;
+        serviceConfig.Slice = "system-fluxer.slice";
       };
       services.redis.servers.fluxer = {
         enable = true;
@@ -504,6 +505,9 @@ in
         after = afterSecrets;
         wants = afterSecrets;
         serviceConfig = {
+          # NATS and Meilisearch are the host's one instance, which other
+          # services may share; the shared PostgreSQL stays out.
+          Slice = lib.mkDefault "system-fluxer.slice";
           LoadCredential = lib.optional (natsToken != null) "token:${natsToken}";
           RuntimeDirectory = "fluxer-nats";
           RuntimeDirectoryMode = "0700";
@@ -537,9 +541,10 @@ in
           log_level = "WARN";
         };
       };
-      systemd.services.meilisearch = lib.mkIf cfg.generateSecrets {
-        after = [ "fluxer-secrets.service" ];
-        wants = [ "fluxer-secrets.service" ];
+      systemd.services.meilisearch = {
+        after = afterSecrets;
+        wants = afterSecrets;
+        serviceConfig.Slice = lib.mkDefault "system-fluxer.slice";
       };
     })
 

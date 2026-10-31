@@ -531,11 +531,6 @@ in
       };
       users.groups = mkIf (cfg.group == "fluxer") { fluxer = { }; };
 
-      systemd.slices.system-fluxer = {
-        description = "Fluxer chat instance";
-        documentation = [ "https://docs.fluxer.app/operator/" ];
-      };
-
       # Peer authentication maps the services' user to the role of that name.
       assertions = [
         {

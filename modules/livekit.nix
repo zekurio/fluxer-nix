@@ -250,6 +250,7 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          Slice = "system-fluxer.slice";
           LoadCredential = [ "secret:${cfg.apiSecretFile}" ];
           RuntimeDirectory = "fluxer-livekit";
           RuntimeDirectoryMode = "0700";
@@ -265,7 +266,10 @@ in
 
       # Restart LiveKit whenever the key file is rebuilt, such as after a
       # change of apiKey or a restart to pick up a rotated secret.
-      systemd.services.livekit.partOf = [ "fluxer-livekit-keys.service" ];
+      systemd.services.livekit = {
+        partOf = [ "fluxer-livekit-keys.service" ];
+        serviceConfig.Slice = lib.mkDefault "system-fluxer.slice";
+      };
 
       networking.firewall = mkIf cfg.openFirewall {
         allowedTCPPorts = [ cfg.tcpPort ];

@@ -185,6 +185,18 @@ in
   };
 
   config = {
+    # The instance's units run in one slice, so its resources add up in one
+    # place. Defined once one of them does, on whichever host that is.
+    systemd.slices.system-fluxer =
+      lib.mkIf
+        (lib.any (unit: unit.serviceConfig.Slice or null == "system-fluxer.slice") (
+          lib.attrValues config.systemd.services
+        ))
+        {
+          description = "Fluxer chat instance";
+          documentation = [ "https://docs.fluxer.app/operator/" ];
+        };
+
     assertions = [
       {
         assertion = lib.all (n: envName.check n) (lib.attrNames cfg.secrets ++ lib.attrNames cfg.settings);

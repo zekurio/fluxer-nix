@@ -388,7 +388,7 @@ let
       && lib.hasInfix "10.0.0.1:6379/0 >/run/fluxer-kv/FLUXER_KV_URL" remoteWorker.systemd.services.fluxer-kv-url.script
       && lib.elem "FLUXER_KV_URL:/run/fluxer-kv/FLUXER_KV_URL" (unit remoteWorker "worker")
       .serviceConfig.LoadCredential;
-    "the module creates its own user and group" =
+    "the module creates its own user and group, and puts the instance in one slice" =
       instance.users.users.fluxer.isSystemUser
       && instance.users.users.fluxer.group == "fluxer"
       && instance.users.groups ? fluxer
@@ -400,7 +400,13 @@ let
         "fluxer-secrets"
         "fluxer-seaweedfs"
         "fluxer-kv-url"
-      ];
+        "fluxer-livekit-keys"
+        "livekit"
+        "meilisearch"
+        "nats"
+        "redis-fluxer"
+      ]
+      && !(instance.systemd.services.postgresql.serviceConfig ? Slice);
     "a user and group under other names are the operator's" =
       failed ownUser == [ ]
       && !ownUser.users.users.chat.isSystemUser
