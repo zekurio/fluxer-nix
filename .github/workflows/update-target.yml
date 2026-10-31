@@ -1,0 +1,125 @@
+# Updates one pin on update/<target>, runs CI on it, and opens or refreshes the
+# pull request. Pull requests opened with GITHUB_TOKEN start no workflows, so
+# CI runs here and the pull request links to the result.
+name: Update target
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: fluxer, fluxer-desktop or nixpkgs
+        type: string
+        required: true
+
+env:
+  BRANCH: update/${{ inputs.target }}
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.push.outputs.changed }}
+      title: ${{ steps.update.outputs.title }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          case $TARGET in
+            fluxer)
+              bash pkgs/fluxer/update.sh
+              title="Update Fluxer server to $(jq -r .version pkgs/fluxer/release.json)"
+              ;;
+            fluxer-desktop)
+              bash pkgs/fluxer-desktop/update.sh
+              title="Update fluxer-desktop to $(jq -r .version pkgs/fluxer-desktop/sources.json)"
+              ;;
+            nixpkgs)
+              nix flake update nixpkgs
+              title="Update nixpkgs to $(date -ud "@$(jq -r .nodes.nixpkgs.locked.lastModified flake.lock)" +%F)"
+              ;;
+            *)
+              echo "unknown target $TARGET" >&2
+              exit 1
+              ;;
+          esac
+          echo "title=$title" >>"$GITHUB_OUTPUT"
+
+      - name: Push
+        id: push
+        env:
+          TITLE: ${{ steps.update.outputs.title }}
+        run: |
+          if git diff --quiet; then
+            echo "Already up to date."
+            echo changed=false >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$BRANCH"
+          git commit -qam "$TITLE"
+          # The branch already holds this update, and CI has run on it. Delete
+          # the branch to build it again.
+          if git fetch -q origin "$BRANCH" 2>/dev/null && git diff --quiet FETCH_HEAD HEAD; then
+            echo "$BRANCH is unchanged."
+            echo changed=false >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git push -f origin "$BRANCH"
+          echo changed=true >>"$GITHUB_OUTPUT"
+
+  check:
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: update/${{ inputs.target }}
+    secrets: inherit
+
+  pull-request:
+    needs: [update, check]
+    # Open the pull request even when CI fails, as a draft, so the failure
+    # shows up next to the update.
+    if: always() && needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: ${{ needs.update.outputs.title }}
+          RESULT: ${{ needs.check.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$RESULT" = success ]; then
+            body="Opened by the update workflow. CI passed: $RUN_URL"
+          else
+            body="Opened by the update workflow. CI did not pass ($RESULT): $RUN_URL"
+          fi
+          open=$(gh pr list --head "$BRANCH" --state open --json number,isDraft \
+            --jq '.[0] // empty | "\(.number) \(.isDraft)"')
+          if [ -z "$open" ]; then
+            flags=()
+            [ "$RESULT" = success ] || flags=(--draft)
+            gh pr create --head "$BRANCH" --title "$TITLE" --body "$body" "${flags[@]}"
+            exit 0
+          fi
+          read -r pr draft <<<"$open"
+          gh pr edit "$pr" --title "$TITLE" --body "$body"
+          if [ "$RESULT" = success ] && [ "$draft" = true ]; then
+            gh pr ready "$pr"
+          elif [ "$RESULT" != success ] && [ "$draft" = false ]; then
+            gh pr ready --undo "$pr"
+          fi

@@ -17,6 +17,13 @@ root=$(git rev-parse --show-toplevel)
 release_file=${1:-$root/pkgs/fluxer/release.json}
 repo=fluxerapp/fluxer
 
+# GitHub allows few unauthenticated API requests per address, and CI runners
+# share addresses.
+auth=()
+if [[ -n ${GITHUB_TOKEN:-} ]]; then
+  auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
+fi
+
 # The components this flake builds. fluxer-app-proxy is the variant of
 # fluxer-app-proxy-self-hosted for the official instance, and the docs site is
 # not part of an instance.
@@ -49,7 +56,7 @@ deps=(
 )
 
 tag=$(
-  curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=100" \
+  curl -fsSL "${auth[@]}" "https://api.github.com/repos/$repo/releases?per_page=100" \
     | jq -r '[.[] | select((.tag_name | startswith("fluxer-release@")) and (.draft | not) and (.prerelease | not))]
       | if length == 0 then error("no fluxer-release in the last 100 releases") else max_by(.published_at).tag_name end'
 )

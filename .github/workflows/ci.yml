@@ -1,0 +1,78 @@
+# Builds every package and runs the checks, then pushes what it built to the
+# binary cache.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # The update workflow runs this on its branch before it opens a pull request.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+
+concurrency:
+  group: ci-${{ github.head_ref || inputs.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.system }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+            vm-tests: true
+          # The arm runners have no KVM, so they skip the NixOS tests.
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+            vm-tests: false
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache /usr/local/share/boost /usr/local/.ghcup
+          df -h /
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Enable KVM
+        if: matrix.vm-tests
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pulls from the cache, and pushes everything built here when the token
+      # is set. Pull requests from forks get no secrets, so they only pull.
+      - uses: cachix/cachix-action@v16
+        with:
+          name: zekurio
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build
+        env:
+          SYSTEM: ${{ matrix.system }}
+          VM_TESTS: ${{ matrix.vm-tests }}
+        run: |
+          nix eval --raw ".#checks.$SYSTEM" --apply "
+            checks: builtins.concatStringsSep \"\\n\" (map (name: \".#checks.$SYSTEM.\${name}\")
+              (builtins.filter (name: $VM_TESTS || !(checks.\${name} ? driverInteractive))
+                (builtins.attrNames checks)))" \
+            | xargs nix build -L --no-link --keep-going

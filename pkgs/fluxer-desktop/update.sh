@@ -10,6 +10,13 @@ set -euo pipefail
 sources=${1:-$(git rev-parse --show-toplevel)/pkgs/fluxer-desktop/sources.json}
 feed=https://pkgs.fluxer.com/desktop/stable/linux
 
+# GitHub allows few unauthenticated API requests per address, and CI runners
+# share addresses.
+auth=()
+if [[ -n ${GITHUB_TOKEN:-} ]]; then
+  auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
+fi
+
 current=$(jq -r .version "$sources")
 version=
 declare -A hashes
@@ -28,7 +35,7 @@ for system in $(jq -r '.platforms | keys[]' "$sources"); do
   fi
 
   asset="Fluxer-$v-linux-$arch.tar.gz"
-  digest=$(curl -fsSL "https://api.github.com/repos/fluxerapp/fluxer/releases/tags/fluxer-desktop-stable@$v" \
+  digest=$(curl -fsSL "${auth[@]}" "https://api.github.com/repos/fluxerapp/fluxer/releases/tags/fluxer-desktop-stable@$v" \
     | jq -r --arg name "$asset" '.assets[] | select(.name == $name) | .digest')
   if [[ $digest != "sha256:$sha256" ]]; then
     echo "GitHub reports '$digest' for $asset, the feed says sha256:$sha256." >&2

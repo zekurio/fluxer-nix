@@ -1,0 +1,28 @@
+# Looks for new Fluxer releases and a newer nixpkgs once a day. Each one that
+# changed gets its own branch, is built and checked, and becomes a pull request.
+name: Update
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+# A second run waits for the first instead of racing it on the same branches.
+concurrency:
+  group: update
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [fluxer, fluxer-desktop, nixpkgs]
+    uses: ./.github/workflows/update-target.yml
+    with:
+      target: ${{ matrix.target }}
+    secrets: inherit

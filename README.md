@@ -7,6 +7,26 @@ separately, so a host can run only the parts it needs.
 The service packages and modules are new and not yet proven on a real
 instance. See [Status](#status).
 
+## Binary cache
+
+CI builds every package for `x86_64-linux` and `aarch64-linux` and pushes them
+to [Cachix](https://zekurio.cachix.org), so you can download them instead of
+building them. The Rust services in particular take a long time to build.
+
+```nix
+{
+  nix.settings = {
+    extra-substituters = [ "https://zekurio.cachix.org" ];
+    extra-trusted-public-keys = [ "zekurio.cachix.org-1:mv0mACvSLZtBkXXh5YDPPXmFBJ/eO+VkSzep6LJZrAg=" ];
+  };
+}
+```
+
+The cache only holds packages built with this flake's nixpkgs. The service
+options default to those packages. You get cache misses if you set
+`inputs.nixpkgs.follows` on this flake, or take the packages from the overlay,
+since both build them with your nixpkgs.
+
 ## Desktop client
 
 `fluxer-desktop` repackages the official stable Linux build for `x86_64-linux`
@@ -80,6 +100,8 @@ Electron already picks Wayland on its own when it is available.
 The script reads the version and tarball checksums from the feed the client
 polls (`pkgs.fluxer.com`). It refuses to write a pin unless GitHub reports the
 same digest for the release asset.
+
+A [daily workflow](#automatic-updates) runs this script too.
 
 ## Self-hosting
 
@@ -436,6 +458,19 @@ every package builds from the commit upstream built its image from.
 The script pins the newest release, prefetches each new commit, and refetches
 the dependency hashes (Cargo vendor directories, pnpm stores, rebar3
 dependencies, spellcheck dictionaries) of components whose commit changed.
+
+### Automatic updates
+
+`.github/workflows/update.yml` runs once a day and updates three pins
+separately: the server release, `fluxer-desktop` and nixpkgs. Each pin that
+changed is committed to its own branch (`update/fluxer`,
+`update/fluxer-desktop`, `update/nixpkgs`), built and checked on both
+architectures, and opened as a pull request. The pull request is a draft when CI
+fails, with a link to the failing run. Merging it adds nothing new to build:
+CI already pushed the packages to the cache.
+
+The workflow skips a branch that already holds the same update. Delete the
+branch to build it again.
 
 ### Packages
 
