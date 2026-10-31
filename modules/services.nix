@@ -427,7 +427,8 @@ let
           ExecStart = lib.getExe' ccfg.package c.exe;
           inherit (env.serviceConfig) LoadCredential;
           User = cfg.user;
-          Group = cfg.user;
+          Group = cfg.group;
+          Slice = "system-fluxer.slice";
           Restart = "on-failure";
           RestartSec = 5;
           TimeoutStopSec = 35;
@@ -519,11 +520,34 @@ in
     }
 
     (mkIf (lib.any local (lib.attrNames components)) {
-      users.users.${cfg.user} = {
-        isSystemUser = true;
-        group = cfg.user;
+      # As in nixpkgs' modules: a user or group under another name is the
+      # operator's, and may be a normal user or come from a directory.
+      users.users = mkIf (cfg.user == "fluxer") {
+        fluxer = {
+          isSystemUser = true;
+          inherit (cfg) group;
+          description = "Fluxer services";
+        };
       };
-      users.groups.${cfg.user} = { };
+      users.groups = mkIf (cfg.group == "fluxer") { fluxer = { }; };
+
+      systemd.slices.system-fluxer = {
+        description = "Fluxer chat instance";
+        documentation = [ "https://docs.fluxer.app/operator/" ];
+      };
+
+      # Peer authentication maps the services' user to the role of that name.
+      assertions = [
+        {
+          assertion =
+            cfg.postgres.createLocally
+            && lib.any (n: local n && lib.elem "postgres" (components.${n}.after or [ ])) (
+              lib.attrNames components
+            )
+            -> cfg.postgres.user == cfg.user;
+          message = "The services sign in to the local database over its socket as their own user, so services.fluxer.postgres.user has to be services.fluxer.user.";
+        }
+      ];
     })
 
   ];

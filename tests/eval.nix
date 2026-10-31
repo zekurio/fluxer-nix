@@ -51,6 +51,21 @@ let
     };
   };
 
+  # A whole instance under the operator's own user and group.
+  ownUser = eval {
+    users.users.chat = {
+      isNormalUser = true;
+      group = "users";
+    };
+    services.fluxer = {
+      enable = true;
+      domain = "chat.example.com";
+      user = "chat";
+      group = "users";
+      postgres.database = "chat";
+    };
+  };
+
   # An instance with a password in its key-value URL and an SMTP password,
   # which no service but the API claims.
   withExtraSecrets = eval {
@@ -373,6 +388,42 @@ let
       && lib.hasInfix "10.0.0.1:6379/0 >/run/fluxer-kv/FLUXER_KV_URL" remoteWorker.systemd.services.fluxer-kv-url.script
       && lib.elem "FLUXER_KV_URL:/run/fluxer-kv/FLUXER_KV_URL" (unit remoteWorker "worker")
       .serviceConfig.LoadCredential;
+    "the module creates its own user and group" =
+      instance.users.users.fluxer.isSystemUser
+      && instance.users.users.fluxer.group == "fluxer"
+      && instance.users.groups ? fluxer
+      && (unit instance "api").serviceConfig.Group == "fluxer"
+      && instance.systemd.slices ? system-fluxer
+      && lib.all (name: instance.systemd.services.${name}.serviceConfig.Slice == "system-fluxer.slice") [
+        "fluxer-api"
+        "fluxer-gateway"
+        "fluxer-secrets"
+        "fluxer-seaweedfs"
+        "fluxer-kv-url"
+      ];
+    "a user and group under other names are the operator's" =
+      failed ownUser == [ ]
+      && !ownUser.users.users.chat.isSystemUser
+      && ownUser.users.users.chat.group == "users"
+      && !(ownUser.users.users ? fluxer)
+      && !(ownUser.users.groups ? fluxer)
+      && (unit ownUser "api").serviceConfig.User == "chat"
+      && (unit ownUser "api").serviceConfig.Group == "users"
+      && map (u: u.name) ownUser.services.postgresql.ensureUsers == [ "chat" ];
+    "the local database role has to be the services' user" =
+      lib.any (lib.hasInfix "has to be services.fluxer.user")
+        (
+          failed (eval {
+            services.fluxer = {
+              enable = true;
+              domain = "chat.example.com";
+              postgres = {
+                user = "chat";
+                database = "chat";
+              };
+            };
+          })
+        );
     "the module's WireGuard tunnel connects every host" =
       let
         peers =

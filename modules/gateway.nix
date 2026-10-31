@@ -36,9 +36,9 @@ let
     # The release's commands for a running gateway, such as ping, pid and
     # rpc, as its user and with its node settings. Run it as root.
     set -eu
-    out=$(${runuser} -u ${cfg.user} -- mktemp -d)
+    out=$(${runuser} -u ${cfg.user} -g ${cfg.group} -- mktemp -d)
     trap 'rm -rf "$out"' EXIT
-    ${runuser} -u ${cfg.user} -- env ${
+    ${runuser} -u ${cfg.user} -g ${cfg.group} -- env ${
       lib.concatMapStringsSep " " (
         name: lib.escapeShellArg "${name}=${lib.replaceStrings [ "%%" ] [ "%" ] unitEnv.${name}}"
       ) toolEnv

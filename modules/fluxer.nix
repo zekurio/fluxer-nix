@@ -74,8 +74,19 @@ in
       type = types.str;
       default = "fluxer";
       description = ''
-        The user the Fluxer services run as. With the local database it is
-        also the database role, which they reach over the Unix socket.
+        The user the Fluxer services run as. The module creates it under the
+        default name; a user under another name has to exist already. With the
+        local database it is also the database role, which the services reach
+        over the Unix socket.
+      '';
+    };
+
+    group = mkOption {
+      type = types.str;
+      default = "fluxer";
+      description = ''
+        The group the Fluxer services run as. The module creates it under the
+        default name; a group under another name has to exist already.
       '';
     };
 

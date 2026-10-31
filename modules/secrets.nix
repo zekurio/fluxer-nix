@@ -48,6 +48,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Slice = "system-fluxer.slice";
         StateDirectory = "fluxer-secrets";
         StateDirectoryMode = "0700";
         UMask = "0077";

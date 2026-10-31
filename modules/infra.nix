@@ -341,6 +341,7 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          Slice = "system-fluxer.slice";
           RuntimeDirectory = "fluxer-kv";
           RuntimeDirectoryMode = "0700";
           UMask = "0077";
@@ -577,6 +578,7 @@ in
             "-volume.max=10000"
           ];
           DynamicUser = true;
+          Slice = "system-fluxer.slice";
           StateDirectory = "fluxer-seaweedfs";
           WorkingDirectory = "/var/lib/fluxer-seaweedfs";
           Restart = "on-failure";
@@ -606,6 +608,7 @@ in
           Type = "oneshot";
           RemainAfterExit = true;
           DynamicUser = true;
+          Slice = "system-fluxer.slice";
           LoadCredential = [ "secret:${s3Secret}" ];
         };
         script = ''
