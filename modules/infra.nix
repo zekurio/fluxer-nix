@@ -328,10 +328,11 @@ in
       systemd.services.fluxer-kv-url = mkIf composeKvUrl {
         description = "Put together the Fluxer key-value URL";
         wantedBy = [
-          "multi-user.target"
+          "fluxer.target"
           "fluxer-api.service"
           "fluxer-worker.service"
         ];
+        partOf = [ "fluxer.target" ];
         before = [
           "fluxer-api.service"
           "fluxer-worker.service"
@@ -461,6 +462,8 @@ in
       systemd.services.redis-fluxer = {
         after = afterSecrets;
         wants = afterSecrets;
+        wantedBy = [ "fluxer.target" ];
+        partOf = [ "fluxer.target" ];
         serviceConfig.Slice = "system-fluxer.slice";
       };
       services.redis.servers.fluxer = {
@@ -504,9 +507,12 @@ in
       systemd.services.nats = {
         after = afterSecrets;
         wants = afterSecrets;
+        wantedBy = [ "fluxer.target" ];
+        # NATS and Meilisearch are the host's one instance, which other
+        # services may share, so the instance's target and slice are defaults
+        # for them. The shared PostgreSQL stays out.
+        partOf = lib.mkDefault [ "fluxer.target" ];
         serviceConfig = {
-          # NATS and Meilisearch are the host's one instance, which other
-          # services may share; the shared PostgreSQL stays out.
           Slice = lib.mkDefault "system-fluxer.slice";
           LoadCredential = lib.optional (natsToken != null) "token:${natsToken}";
           RuntimeDirectory = "fluxer-nats";
@@ -544,6 +550,8 @@ in
       systemd.services.meilisearch = {
         after = afterSecrets;
         wants = afterSecrets;
+        wantedBy = [ "fluxer.target" ];
+        partOf = lib.mkDefault [ "fluxer.target" ];
         serviceConfig.Slice = lib.mkDefault "system-fluxer.slice";
       };
     })
@@ -558,7 +566,8 @@ in
 
       systemd.services.fluxer-seaweedfs = {
         description = "SeaweedFS object store for Fluxer";
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "fluxer.target" ];
+        partOf = [ "fluxer.target" ];
         after = [ "network.target" ];
         environment.WEED_MASTER_VOLUME_GROWTH_COPY_1 = "1";
         serviceConfig = {
@@ -599,7 +608,8 @@ in
       # expiry of the uploads bucket.
       systemd.services.fluxer-seaweedfs-init = {
         description = "Create the Fluxer buckets";
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "fluxer.target" ];
+        partOf = [ "fluxer.target" ];
         after = [
           "fluxer-seaweedfs.service"
         ]

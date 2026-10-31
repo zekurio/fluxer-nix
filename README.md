@@ -152,12 +152,24 @@ The services run as the `fluxer` user and group, which the module creates.
 such as a user of your own or one from a directory. With the local database
 the user is also the database role.
 
-The instance's units run in `system-fluxer.slice`, so `systemctl status
-system-fluxer.slice` shows them together with their memory and CPU: the
-Fluxer services, and the backing services and LiveKit when the module runs
-them. PostgreSQL stays out, as other services on the host share it; NATS,
-Meilisearch and LiveKit are the host's single instances too, so their slice is
-a default you can override.
+The instance's units are part of `fluxer.target` and run in
+`system-fluxer.slice`: the Fluxer services, and the backing services and
+LiveKit when the module runs them. Stopping, starting or restarting the
+target does that to all of them, for example around a backup or after a
+secret changes:
+
+```nix
+services.restic.backups.fluxer = {
+  backupPrepareCommand = "systemctl stop fluxer.target";
+  backupCleanupCommand = "systemctl start fluxer.target";
+};
+sops.secrets.fluxer-sudo-mode.restartUnits = [ "fluxer.target" ];
+```
+
+`systemctl status system-fluxer.slice` shows them together with their memory
+and CPU. PostgreSQL stays out of both, as other services on the host share
+it. NATS, Meilisearch and LiveKit are the host's single instances too, so
+their place in the target and slice is a default you can override.
 
 The backing services each have `createLocally` (`seaweedfs.enable` for S3), on
 with `services.fluxer.enable`, and an address for a server elsewhere:

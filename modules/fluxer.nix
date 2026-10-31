@@ -27,6 +27,12 @@ let
       types.bool
     ]
   );
+
+  # The instance's units, on whichever host they run.
+  instanceUnits = lib.filter (
+    unit:
+    unit.serviceConfig.Slice or null == "system-fluxer.slice" || lib.elem "fluxer.target" unit.partOf
+  ) (lib.attrValues config.systemd.services);
 in
 {
   options.services.fluxer = {
@@ -185,17 +191,18 @@ in
   };
 
   config = {
-    # The instance's units run in one slice, so its resources add up in one
-    # place. Defined once one of them does, on whichever host that is.
-    systemd.slices.system-fluxer =
-      lib.mkIf
-        (lib.any (unit: unit.serviceConfig.Slice or null == "system-fluxer.slice") (
-          lib.attrValues config.systemd.services
-        ))
-        {
-          description = "Fluxer chat instance";
-          documentation = [ "https://docs.fluxer.app/operator/" ];
-        };
+    # The instance's units run in one slice, so their resources add up in one
+    # place, and are part of one target, which starts, stops and restarts them
+    # together, for a backup or a changed secret.
+    systemd.slices.system-fluxer = lib.mkIf (instanceUnits != [ ]) {
+      description = "Fluxer chat instance";
+      documentation = [ "https://docs.fluxer.app/operator/" ];
+    };
+    systemd.targets.fluxer = lib.mkIf (instanceUnits != [ ]) {
+      description = "Fluxer chat instance";
+      documentation = [ "https://docs.fluxer.app/operator/" ];
+      wantedBy = [ "multi-user.target" ];
+    };
 
     assertions = [
       {

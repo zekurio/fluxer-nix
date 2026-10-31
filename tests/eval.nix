@@ -407,6 +407,31 @@ let
         "redis-fluxer"
       ]
       && !(instance.systemd.services.postgresql.serviceConfig ? Slice);
+    "fluxer.target starts, stops and restarts the instance" =
+      let
+        services = instance.systemd.services;
+        member = name: lib.elem "fluxer.target" services.${name}.partOf;
+        started = name: lib.elem "fluxer.target" services.${name}.wantedBy;
+      in
+      instance.systemd.targets.fluxer.wantedBy == [ "multi-user.target" ]
+      && lib.all (name: member name && started name) [
+        "fluxer-api"
+        "fluxer-gateway"
+        "fluxer-secrets"
+        "fluxer-seaweedfs"
+        "fluxer-seaweedfs-init"
+        "fluxer-kv-url"
+        "meilisearch"
+        "nats"
+        "redis-fluxer"
+      ]
+      # LiveKit follows its key unit, which is a member.
+      && member "fluxer-livekit-keys"
+      && started "livekit"
+      && lib.elem "fluxer-livekit-keys.service" services.livekit.partOf
+      && !(member "postgresql")
+      && !((eval { }).systemd.targets ? fluxer)
+      && !((eval { }).systemd.slices ? system-fluxer);
     "a user and group under other names are the operator's" =
       failed ownUser == [ ]
       && !ownUser.users.users.chat.isSystemUser

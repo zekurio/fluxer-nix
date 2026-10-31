@@ -43,7 +43,8 @@ in
   config = lib.mkIf (cfg.generateSecrets && missing != { }) {
     systemd.services.fluxer-secrets = {
       description = "Generate Fluxer secrets";
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = [ "fluxer.target" ];
+      partOf = [ "fluxer.target" ];
       path = [ pkgs.coreutils ];
       serviceConfig = {
         Type = "oneshot";

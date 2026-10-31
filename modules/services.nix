@@ -419,7 +419,8 @@ let
     lib.nameValuePair (unitName name) (
       mkIf ccfg.enable {
         description = c.description;
-        wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "fluxer.target" ];
+        partOf = [ "fluxer.target" ];
         after = [ "network-online.target" ] ++ deps;
         wants = [ "network-online.target" ] ++ deps;
         inherit (env) environment;

@@ -247,6 +247,7 @@ in
         after = lib.optional fluxer.generateSecrets "fluxer-secrets.service";
         wants = lib.optional fluxer.generateSecrets "fluxer-secrets.service";
         requiredBy = [ "livekit.service" ];
+        partOf = [ "fluxer.target" ];
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
@@ -266,8 +267,11 @@ in
 
       # Restart LiveKit whenever the key file is rebuilt, such as after a
       # change of apiKey or a restart to pick up a rotated secret.
+      # It also follows the key unit when the instance's target stops or
+      # restarts, and the target starts it again.
       systemd.services.livekit = {
         partOf = [ "fluxer-livekit-keys.service" ];
+        wantedBy = [ "fluxer.target" ];
         serviceConfig.Slice = lib.mkDefault "system-fluxer.slice";
       };
 

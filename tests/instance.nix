@@ -113,5 +113,37 @@ pkgs.testers.runNixOSTest {
               ("fluxer-gateway", "failed to fetch from API"),
           ]:
               server.fail(f"journalctl -b -u {unit} | grep -qi '{line}'")
+
+      # How a backup or a changed secret handles the instance: through
+      # fluxer.target, which leaves the host's shared PostgreSQL alone.
+      members = ["fluxer-api", "fluxer-worker", "fluxer-gateway", "fluxer-users", "redis-fluxer",
+                 "nats", "meilisearch", "fluxer-seaweedfs", "livekit"]
+
+      def invocations():
+          return {u: server.succeed(f"systemctl show -P InvocationID {u}.service").strip()
+                  for u in members + ["postgresql"]}
+
+      def instance_up():
+          for unit in members:
+              server.wait_for_unit(f"{unit}.service")
+          for port in [8080, 8081, 8095]:
+              health(port)
+          server.wait_until_succeeds(f"{edge}/api/_health", timeout=120)
+
+      with subtest("restarting fluxer.target restarts the instance"):
+          before = invocations()
+          server.succeed("systemctl restart fluxer.target")
+          instance_up()
+          after = invocations()
+          assert all(before[u] != after[u] for u in members), (before, after)
+          assert before["postgresql"] == after["postgresql"], (before, after)
+
+      with subtest("stopping fluxer.target stops the instance, starting it starts it again"):
+          server.succeed("systemctl stop fluxer.target")
+          for unit in members:
+              server.wait_until_fails(f"systemctl is-active --quiet {unit}.service", timeout=60)
+          server.succeed("systemctl is-active --quiet postgresql.service")
+          server.succeed("systemctl start fluxer.target")
+          instance_up()
     '';
 }
