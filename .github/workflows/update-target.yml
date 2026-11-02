@@ -21,6 +21,7 @@ jobs:
       contents: write
     outputs:
       changed: ${{ steps.push.outputs.changed }}
+      sha: ${{ steps.push.outputs.sha }}
     steps:
       # The run's own commit goes stale once an earlier target has pushed, so
       # start from the current main.
@@ -73,6 +74,7 @@ jobs:
           git commit -qam "$TITLE"
           git push -f origin "HEAD:refs/heads/$BRANCH"
           echo changed=true >>"$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
 
   check:
     needs: update
@@ -85,18 +87,22 @@ jobs:
   # A failed check leaves the branch in place to inspect; the next run replaces
   # it.
   merge:
-    needs: check
+    needs: [update, check]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ env.BRANCH }}
-
-      # Not forced: if someone pushed to main during the check, the push fails
-      # rather than landing an untested combination, and tomorrow's run retries.
+      # Moves main to the exact commit CI built, through the API rather than a
+      # git push: a shallow checkout lacks main's commit, so git cannot tell the
+      # push is a fast-forward and rejects it. force=false makes GitHub refuse a
+      # non-fast-forward, so if someone pushed to main during the check, this
+      # fails rather than landing an untested combination, and the next run
+      # retries.
       - name: Push to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ needs.update.outputs.sha }}
         run: |
-          git push origin HEAD:main
-          git push origin --delete "$BRANCH"
+          gh api -X PATCH "repos/$REPO/git/refs/heads/main" -f sha="$SHA" -F force=false
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH"
