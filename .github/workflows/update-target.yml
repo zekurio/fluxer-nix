@@ -1,6 +1,6 @@
-# Updates one pin on update/<target>, runs CI on it, and opens or refreshes the
-# pull request. Pull requests opened with GITHUB_TOKEN start no workflows, so
-# CI runs here and the pull request links to the result.
+# Updates one pin on update/<target>, runs CI on it, and pushes the commit to
+# main when CI passes. A push with GITHUB_TOKEN starts no workflows, so CI does
+# not run again on main; it already built this exact commit and filled the cache.
 name: Update target
 
 on:
@@ -21,9 +21,12 @@ jobs:
       contents: write
     outputs:
       changed: ${{ steps.push.outputs.changed }}
-      title: ${{ steps.update.outputs.title }}
     steps:
+      # The run's own commit goes stale once an earlier target has pushed, so
+      # start from the current main.
       - uses: actions/checkout@v5
+        with:
+          ref: main
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -67,16 +70,8 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git switch -c "$BRANCH"
           git commit -qam "$TITLE"
-          # The branch already holds this update, and CI has run on it. Delete
-          # the branch to build it again.
-          if git fetch -q origin "$BRANCH" 2>/dev/null && git diff --quiet FETCH_HEAD HEAD; then
-            echo "$BRANCH is unchanged."
-            echo changed=false >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git push -f origin "$BRANCH"
+          git push -f origin "HEAD:refs/heads/$BRANCH"
           echo changed=true >>"$GITHUB_OUTPUT"
 
   check:
@@ -87,39 +82,21 @@ jobs:
       ref: update/${{ inputs.target }}
     secrets: inherit
 
-  pull-request:
-    needs: [update, check]
-    # Open the pull request even when CI fails, as a draft, so the failure
-    # shows up next to the update.
-    if: always() && needs.update.outputs.changed == 'true'
+  # A failed check leaves the branch in place to inspect; the next run replaces
+  # it.
+  merge:
+    needs: check
     runs-on: ubuntu-24.04
     permissions:
-      pull-requests: write
+      contents: write
     steps:
-      - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TITLE: ${{ needs.update.outputs.title }}
-          RESULT: ${{ needs.check.result }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH }}
+
+      # Not forced: if someone pushed to main during the check, the push fails
+      # rather than landing an untested combination, and tomorrow's run retries.
+      - name: Push to main
         run: |
-          if [ "$RESULT" = success ]; then
-            body="Opened by the update workflow. CI passed: $RUN_URL"
-          else
-            body="Opened by the update workflow. CI did not pass ($RESULT): $RUN_URL"
-          fi
-          open=$(gh pr list --head "$BRANCH" --state open --json number,isDraft \
-            --jq '.[0] // empty | "\(.number) \(.isDraft)"')
-          if [ -z "$open" ]; then
-            flags=()
-            [ "$RESULT" = success ] || flags=(--draft)
-            gh pr create --head "$BRANCH" --title "$TITLE" --body "$body" "${flags[@]}"
-            exit 0
-          fi
-          read -r pr draft <<<"$open"
-          gh pr edit "$pr" --title "$TITLE" --body "$body"
-          if [ "$RESULT" = success ] && [ "$draft" = true ]; then
-            gh pr ready "$pr"
-          elif [ "$RESULT" != success ] && [ "$draft" = false ]; then
-            gh pr ready --undo "$pr"
-          fi
+          git push origin HEAD:main
+          git push origin --delete "$BRANCH"

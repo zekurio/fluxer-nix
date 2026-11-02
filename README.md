@@ -465,12 +465,12 @@ dependencies, spellcheck dictionaries) of components whose commit changed.
 separately: the server release, `fluxer-desktop` and nixpkgs. Each pin that
 changed is committed to its own branch (`update/fluxer`,
 `update/fluxer-desktop`, `update/nixpkgs`), built and checked on both
-architectures, and opened as a pull request. The pull request is a draft when CI
-fails, with a link to the failing run. Merging it adds nothing new to build:
-CI already pushed the packages to the cache.
+architectures, and pushed to main when CI passes. CI has already pushed the
+packages to the cache by then. The pins update one after another, so each one
+is built on top of the previous one.
 
-The workflow skips a branch that already holds the same update. Delete the
-branch to build it again.
+When CI fails, the branch stays for inspection and the run fails. The next run
+retries from main and replaces the branch.
 
 ### Packages
 

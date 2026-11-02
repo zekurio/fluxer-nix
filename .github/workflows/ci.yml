@@ -7,7 +7,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  # The update workflow runs this on its branch before it opens a pull request.
+  # The update workflow runs this on its branch before it pushes to main.
   workflow_call:
     inputs:
       ref:

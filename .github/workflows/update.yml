@@ -1,5 +1,5 @@
 # Looks for new Fluxer releases and a newer nixpkgs once a day. Each one that
-# changed gets its own branch, is built and checked, and becomes a pull request.
+# changed gets its own branch, is built and checked, and lands on main.
 name: Update
 
 on:
@@ -13,13 +13,15 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   update:
     name: Update ${{ matrix.target }}
     strategy:
       fail-fast: false
+      # One at a time, so each target starts from the main the previous one
+      # pushed, and what lands on main is the commit CI built.
+      max-parallel: 1
       matrix:
         target: [fluxer, fluxer-desktop, nixpkgs]
     uses: ./.github/workflows/update-target.yml
