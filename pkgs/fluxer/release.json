@@ -1,27 +1,27 @@
 {
-  "version": "2026.1102.33216",
+  "version": "2026.1102.205049",
   "components": {
     "fluxer-admin": {
-      "version": "2026.1102.30925",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200626",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-api": {
-      "version": "2026.1102.30733",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200651",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
-        "pnpmDeps": "sha256-FTXtIh8mnHtejsdpyYEPn1EttE7SdJQFnrTQFXyUa3c="
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
+        "pnpmDeps": "sha256-EJFup5DJtTaF6FCSaOQKAvwLW/zXO05X1be5FKhcdAs="
       }
     },
     "fluxer-app-proxy-self-hosted": {
-      "version": "2026.1102.30747",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.202600",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g=",
         "libfluxcoreCargoDeps": "sha256-OO4aw0TmibmV9NAfVMDue8PAbHsXHKgM/XuYVN8QOQg=",
         "libfluxwebpCargoDeps": "sha256-9kG0urKGRwGGYenIdmW/E9XZ/lSC3dO0mZ8RuzSA61E=",
@@ -29,10 +29,10 @@
       }
     },
     "fluxer-gateway": {
-      "version": "2026.1102.30901",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200652",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g=",
         "rebarDeps": "sha256-bhSNeBfuCROfYbkIU4c56KfgpxAmhlL9N+u4oQRP9+o=",
         "memberListNifCargoDeps": "sha256-2rC75bs0LvcV2K+quzl9qJ9DizkEV5FMjU73+mxsue0=",
@@ -40,66 +40,66 @@
       }
     },
     "fluxer-gifs": {
-      "version": "2026.1102.30858",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200632",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-media-proxy": {
-      "version": "2026.1102.30919",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200613",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-messages": {
-      "version": "2026.1102.30915",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200637",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-push": {
-      "version": "2026.1102.30912",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200624",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-snowflakes": {
-      "version": "2026.1102.30906",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200615",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-static": {
-      "version": "2026.1102.30858",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200633",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "spellcheckDictionaries": "sha256-8rGq4IpvBTCV8U2k4uzqIry+iVfSBpezM1mwbDbXaHg="
       }
     },
     "fluxer-unfurl": {
-      "version": "2026.1102.30829",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200608",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-users": {
-      "version": "2026.1102.30903",
-      "rev": "7b15c2e8106830fb8869f9805ae9128c9089805e",
+      "version": "2026.1102.200558",
+      "rev": "d4bb09cf6d0a36628da1456c6208d81ed911068d",
       "hashes": {
-        "src": "sha256-H5+DaHvJvkX3BJ68ZenGOT2HnxXYUOza9yiNVHsUxTI=",
+        "src": "sha256-y5qbO/C7EPHqRW29XAmY1LZLyCPH89kaQ+I8l+Z7ylk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     }
