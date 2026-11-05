@@ -1,38 +1,38 @@
 {
-  "version": "2026.1104.13325",
+  "version": "2026.1105.30754",
   "components": {
     "fluxer-admin": {
-      "version": "2026.1104.4716",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24522",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-api": {
-      "version": "2026.1104.4651",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24535",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "pnpmDeps": "sha256-DfLnB2b88e9YNaSO0fSz/rqa0HROr7kovPHLic1GcLY="
       }
     },
     "fluxer-app-proxy-self-hosted": {
-      "version": "2026.1104.4708",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24531",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g=",
         "libfluxcoreCargoDeps": "sha256-OO4aw0TmibmV9NAfVMDue8PAbHsXHKgM/XuYVN8QOQg=",
         "libfluxwebpCargoDeps": "sha256-9kG0urKGRwGGYenIdmW/E9XZ/lSC3dO0mZ8RuzSA61E=",
-        "pnpmDeps": "sha256-j0CgHjdsqyZALiiZw7xArjhNoSjziFHTQ0xoIbExk+g="
+        "pnpmDeps": "sha256-0QsHiN/l8MveefJy1WirgBxPpbBLosCngYCRgc12qH0="
       }
     },
     "fluxer-gateway": {
-      "version": "2026.1104.4704",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24515",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g=",
         "rebarDeps": "sha256-bhSNeBfuCROfYbkIU4c56KfgpxAmhlL9N+u4oQRP9+o=",
         "memberListNifCargoDeps": "sha256-2rC75bs0LvcV2K+quzl9qJ9DizkEV5FMjU73+mxsue0=",
@@ -40,66 +40,66 @@
       }
     },
     "fluxer-gifs": {
-      "version": "2026.1104.4638",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24521",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-media-proxy": {
-      "version": "2026.1104.4649",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24554",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-messages": {
-      "version": "2026.1104.4720",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24551",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-push": {
-      "version": "2026.1104.4647",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24532",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-snowflakes": {
-      "version": "2026.1104.4654",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24614",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-static": {
-      "version": "2026.1104.4727",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24557",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "spellcheckDictionaries": "sha256-8rGq4IpvBTCV8U2k4uzqIry+iVfSBpezM1mwbDbXaHg="
       }
     },
     "fluxer-unfurl": {
-      "version": "2026.1104.4653",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24541",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     },
     "fluxer-users": {
-      "version": "2026.1104.4653",
-      "rev": "936fbf477163a3b7934ba1a932cc009a7435c6ac",
+      "version": "2026.1105.24623",
+      "rev": "99dab64aa3103ea56758498084ee20ff2b0b1f3f",
       "hashes": {
-        "src": "sha256-5hQFf0k0eBIFTMoO0jkp8qpk07W/led57WyHfkjZMSU=",
+        "src": "sha256-VlAsyDzW6QNkNMgji6ra6Q6eZJKHKSuDTe9iihllrNk=",
         "cargoDeps": "sha256-KBKwdYW3tpZmjoqlA5Lx4b0FTlPcHKrDsXXtazuQO0g="
       }
     }
