@@ -38,8 +38,6 @@ deps=(
   "fluxer-admin cargoDeps fluxer-admin.cargoDeps"
   "fluxer-api pnpmDeps fluxer-api.pnpmDeps"
   "fluxer-app-proxy-self-hosted cargoDeps fluxer-app-proxy.cargoDeps"
-  "fluxer-app-proxy-self-hosted libfluxcoreCargoDeps fluxer-web.libfluxcoreCargoDeps"
-  "fluxer-app-proxy-self-hosted libfluxwebpCargoDeps fluxer-web.libfluxwebpCargoDeps"
   "fluxer-app-proxy-self-hosted pnpmDeps fluxer-web.pnpmDeps"
   "fluxer-gateway cargoDeps fluxer-gateway.cargoDeps"
   "fluxer-gateway rebarDeps fluxer-gateway.rebarDeps"

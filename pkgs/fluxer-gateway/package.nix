@@ -93,10 +93,9 @@ stdenv.mkDerivation {
     # The entrypoint writes the cookie to $HOME/.erlang.cookie in place of
     # vm.args, whose contents end up on the command line, where ps shows it.
     ./cookie-file.patch
-    # FLUXER_GATEWAY_LISTEN_HOST, the address the gateway listens on, and
-    # FLUXER_ERLANG_DIST_INTERFACE, that of its distribution port, which
-    # defaults to every address as before.
-    ./listen-host.patch
+    # FLUXER_ERLANG_DIST_INTERFACE, the address of the distribution port,
+    # which defaults to every address as before.
+    ./dist-interface.patch
     # The rollout config is fetched once, 2 s after start. If the API is not
     # up yet, the gateway keeps the defaults until the config next changes.
     ./retry-rollout-config.patch

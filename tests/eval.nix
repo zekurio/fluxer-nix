@@ -288,8 +288,8 @@ let
         "worker"
       ];
     "the API and the gateway listen on the listen address" =
-      (env instance "api").FLUXER_API_LISTEN_HOST == "127.0.0.1"
-      && (env instance "gateway").FLUXER_GATEWAY_LISTEN_HOST == "127.0.0.1";
+      (env instance "api").FLUXER_API_HOST == "127.0.0.1"
+      && (env instance "gateway").FLUXER_GATEWAY_BIND_HOST == "127.0.0.1";
     "the gateway's distribution stays on loopback without epmd" =
       (env instance "gateway").ERL_DIST_PORT == "9100"
       && (env instance "gateway").FLUXER_ERLANG_DIST_INTERFACE == "{127,0,0,1}";

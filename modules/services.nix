@@ -112,7 +112,7 @@ let
         nodeEnv
         // {
           FLUXER_API_PORT = port;
-          FLUXER_API_LISTEN_HOST = cfg.listenAddress;
+          FLUXER_API_HOST = cfg.listenAddress;
           FLUXER_POSTGRES_MAX_CONNECTIONS = 25;
           FLUXER_API_PRESIGNED_ATTACHMENT_UPLOADS_ENABLED = true;
           FLUXER_API_EMBEDDED_WORKER = false;
@@ -159,7 +159,7 @@ let
         // {
           FLUXER_API_WORKER_MODE = "all_lanes";
           # For its metrics server, which only runs if given a port.
-          FLUXER_API_LISTEN_HOST = cfg.listenAddress;
+          FLUXER_API_HOST = cfg.listenAddress;
           # Runs the cron scheduler, so only one worker per instance.
           FLUXER_API_WORKER_ENABLE_CRON_SCHEDULER = true;
           FLUXER_POSTGRES_MAX_CONNECTIONS = 25;
@@ -186,7 +186,7 @@ let
       port = 8081;
       settings = port: {
         FLUXER_GATEWAY_PORT = port;
-        FLUXER_GATEWAY_LISTEN_HOST = cfg.listenAddress;
+        FLUXER_GATEWAY_BIND_HOST = cfg.listenAddress;
         FLUXER_ERLANG_NODE_NAME = "fluxer_gateway@127.0.0.1";
         FLUXER_ERLANG_DIST_PORT = cfg.gateway.distributionPort;
         # Distribution on loopback, at a fixed port the release tells the node

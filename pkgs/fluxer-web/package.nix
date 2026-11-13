@@ -40,11 +40,9 @@ stdenv.mkDerivation (finalAttrs: {
     hash = hashes.pnpmDeps;
   };
 
-  # The WASM step builds three crates: the markdown parser in the root
-  # workspace, and libfluxcore and libfluxwebp with their own lockfiles.
+  # The WASM step builds three crates of the root workspace: the markdown
+  # parser, libfluxcore and libfluxwebp.
   inherit (component) cargoDeps;
-  libfluxcoreCargoDeps = component.cargoDepsFor "libfluxcoreCargoDeps" "fluxer_app/rust/libfluxcore";
-  libfluxwebpCargoDeps = component.cargoDepsFor "libfluxwebpCargoDeps" "fluxer_app/rust/libfluxwebp";
 
   nativeBuildInputs = [
     brotli
@@ -72,14 +70,8 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   postConfigure = ''
-    # One vendor directory for the three lockfiles. A crate that appears in
-    # several of them is the same crate.
-    mkdir -p "$NIX_BUILD_TOP/cargo-vendor"
-    for deps in $cargoDeps $libfluxcoreCargoDeps $libfluxwebpCargoDeps; do
-      for crate in "$deps"/source-registry-0/*; do
-        ln -sfn "$crate" "$NIX_BUILD_TOP/cargo-vendor/$(basename "$crate")"
-      done
-    done
+    # Not cargoSetupHook: it sets ZSTD_SYS_USE_PKG_CONFIG and other switches
+    # to system libraries, which break the WASM build.
     export CARGO_HOME="$NIX_BUILD_TOP/cargo-home"
     mkdir -p "$CARGO_HOME"
     cat >"$CARGO_HOME/config.toml" <<EOF
@@ -87,7 +79,7 @@ stdenv.mkDerivation (finalAttrs: {
     replace-with = "vendored"
 
     [source.vendored]
-    directory = "$NIX_BUILD_TOP/cargo-vendor"
+    directory = "$cargoDeps/source-registry-0"
 
     [net]
     offline = true

@@ -1,106 +1,104 @@
 {
-  "version": "2026.1107.20335",
+  "version": "2026.1113.53223",
   "components": {
     "fluxer-admin": {
-      "version": "2026.1107.14254",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44458",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-api": {
-      "version": "2026.1107.14234",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44513",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
         "pnpmDeps": "sha256-DfLnB2b88e9YNaSO0fSz/rqa0HROr7kovPHLic1GcLY="
       }
     },
     "fluxer-app-proxy-self-hosted": {
-      "version": "2026.1107.14308",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44530",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds=",
-        "libfluxcoreCargoDeps": "sha256-OO4aw0TmibmV9NAfVMDue8PAbHsXHKgM/XuYVN8QOQg=",
-        "libfluxwebpCargoDeps": "sha256-9kG0urKGRwGGYenIdmW/E9XZ/lSC3dO0mZ8RuzSA61E=",
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA=",
         "pnpmDeps": "sha256-AsZgn/IW5/TDCk4pP7nLMBUcHifxL48Vq7ohTs59LnI="
       }
     },
     "fluxer-gateway": {
-      "version": "2026.1107.14257",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44514",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds=",
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA=",
         "rebarDeps": "sha256-bhSNeBfuCROfYbkIU4c56KfgpxAmhlL9N+u4oQRP9+o=",
         "memberListNifCargoDeps": "sha256-2rC75bs0LvcV2K+quzl9qJ9DizkEV5FMjU73+mxsue0=",
         "markdownNifCargoDeps": "sha256-/2Jx8vYz2SCrwLGvz/F3f7GHp4xv44rL6ZESv9hYJwM="
       }
     },
     "fluxer-gifs": {
-      "version": "2026.1107.14348",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44543",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-media-proxy": {
-      "version": "2026.1107.14917",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44514",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-messages": {
-      "version": "2026.1107.14313",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44549",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-push": {
-      "version": "2026.1107.14315",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44559",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-snowflakes": {
-      "version": "2026.1107.14309",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44602",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-static": {
-      "version": "2026.1107.14315",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44557",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "spellcheckDictionaries": "sha256-8rGq4IpvBTCV8U2k4uzqIry+iVfSBpezM1mwbDbXaHg="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "spellcheckDictionaries": "sha256-ku/uAAK9Ofsj5w7wMVvcSxJBQ384EWEuZnXyzVKYTr4="
       }
     },
     "fluxer-unfurl": {
-      "version": "2026.1107.14311",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44620",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     },
     "fluxer-users": {
-      "version": "2026.1107.14345",
-      "rev": "5d3ff58f09e5fc67e1d8e3c5c9f57f6d11c7f33a",
+      "version": "2026.1113.44601",
+      "rev": "deb395fcc3a2379980cbd2333cf90c5c6920c265",
       "hashes": {
-        "src": "sha256-Aj/a221WnEAtzDOV6t+RDr3xUMNWE2UelUYoacQeqGE=",
-        "cargoDeps": "sha256-vYd11qrfU2rvieNqi+GRMZmsb3ciufi3wXz3hilU4Ds="
+        "src": "sha256-4YWDyYv/bmJ3UymUBZTjWQEu8ZswxsMPhvTNC4/p25E=",
+        "cargoDeps": "sha256-iKj2RcdOAxFlOcDSaWgPEg1BNK2eJZbDUBYp4gUEkDA="
       }
     }
   }

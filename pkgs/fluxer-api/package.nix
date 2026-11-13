@@ -17,8 +17,8 @@ stdenv.mkDerivation (finalAttrs: {
   pname = "fluxer-api";
   inherit (component) version src;
 
-  # FLUXER_API_LISTEN_HOST, the address the API and the worker's metrics
-  # server listen on. Upstream always listens on every address.
+  # The worker's metrics server listens on FLUXER_API_HOST too, like the API.
+  # Upstream has it listen on every address.
   patches = [ ./listen-host.patch ];
 
   pnpmWorkspaces = [ "fluxer_api..." ];
