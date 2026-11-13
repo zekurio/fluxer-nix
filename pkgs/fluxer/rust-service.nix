@@ -2,6 +2,8 @@
 {
   lib,
   rustPlatform,
+  aws-lc,
+  pkg-config,
   fluxerRelease,
 }:
 
@@ -11,6 +13,8 @@
   crate,
   features ? [ ],
   description,
+  nativeBuildInputs ? [ ],
+  buildInputs ? [ ],
   ...
 }@args:
 
@@ -27,6 +31,12 @@ rustPlatform.buildRustPackage (
   // {
     inherit pname;
     inherit (c) version src cargoDeps;
+
+    # rustls uses aws-lc-rs. cargoSetupHook sets AWS_LC_SYS_USE_SYSTEM=1, so
+    # aws-lc-sys finds this one with pkg-config instead of building its
+    # vendored copy.
+    nativeBuildInputs = [ pkg-config ] ++ nativeBuildInputs;
+    buildInputs = [ aws-lc ] ++ buildInputs;
 
     cargoBuildFlags = [
       "-p"
