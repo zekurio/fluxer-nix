@@ -182,8 +182,13 @@ stdenv.mkDerivation {
     # first launch) and the menu entry with process.execPath as the command.
     # Here that is the unwrapped binary in the store, which skips the wrapper
     # and stops existing after the next update. Use the command on $PATH.
-    launchPath='function ([A-Za-z_$][A-Za-z0-9_$]*)\(\)\{return ([A-Za-z_$][A-Za-z0-9_$]*)\(\)\?\?process\.execPath\}'
-    matches=$(grep -rEo "$launchPath" app/dist/main | wc -l)
+    # Source builds set this with FLUXER_LAUNCH_COMMAND, which esbuild inlines
+    # as an empty string in the release bundle:
+    #   return getAppImagePath() ?? (PACKAGE_LAUNCH_COMMAND || process.execPath)
+    launchPath='function ([A-Za-z_$][A-Za-z0-9_$]*)\(\)\{return ([A-Za-z_$][A-Za-z0-9_$]*)\(\)\?\?\([A-Za-z_$][A-Za-z0-9_$]*\|\|process\.execPath\)\}'
+    # grep fails on no match, which under pipefail would end the build before
+    # the message below.
+    matches=$({ grep -rEo "$launchPath" app/dist/main || true; } | wc -l)
     if [ "$matches" -ne 1 ]; then
       echo "expected one Linux launch path function in the main bundle, found $matches" >&2
       exit 1
