@@ -1,13 +1,13 @@
 {
-  "version": "2026.1117.40548",
+  "version": "2026.1118.85743",
   "platforms": {
     "x86_64-linux": {
       "arch": "x64",
-      "hash": "sha256-gg8YIfB3Pl2Y7HACTmYndAgobNtTDUY+GMV8efgxCho="
+      "hash": "sha256-urRGHsTSaYjo8VwyATrQUuY3mhaDwQvuEVns5ns2GHc="
     },
     "aarch64-linux": {
       "arch": "arm64",
-      "hash": "sha256-JZGlEaBy4HWCvCOB12kVDm6CDqCC6QULxSx51XpnsAA="
+      "hash": "sha256-eWHLgH/3z0d/k389JL2JaR3XBGE0oVMmb7WmeTG59I4="
     }
   }
 }
